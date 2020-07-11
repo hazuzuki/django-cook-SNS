@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+
+
+<div class="card mx-auto mt-5" style="width: 30rem;">
+  <div align="center" class="my-xl-4 mr-xl-3">
+    <form action = "" method = "post">
+      {% csrf_token %}
+    <table>
+
+    {% for field in form %}
+      <div class ="mt-3">
+      {{ field.label }}
+      {{ field }}
+      </div>
+    {% endfor %}
+
+
+    {% for error in form.non_field_errors %}
+      <div class = "alert alert-danger mx-3 mt-5" role="alert">
+        <p>{{ error }}</p>
+      </div>
+    {% endfor %}
+
+
+
+
+    </table>
+    <div align="center" class="my-3">
+        <button type="submit" class="btn btn-info">ログイン</button>
+    </div>
+    <div align="center" class="my-3">
+      <ul class="list-unstyled">
+      <li>会員登録はお済みですか？&rarr;<a href="{% url 'signup:new' %}">会員登録</a>へ進む</li>
+      <li>パスワードを忘れた場合&rarr;<a href="{% url 'signup:password_reset' %}">パスワードの再設定</a></li>
+      </ul>
+    </div>
+    </form>
+  </div>
+</div>
+
+
+
+
+
+{% endblock %}

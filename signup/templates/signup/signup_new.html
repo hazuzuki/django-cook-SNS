@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+
+<div class="card mx-auto mt-5" style="width: 30rem;">
+<div align="center" class="my-5">
+  <div class = "mb-4">
+  <h3>会員登録</h3>
+  </div>
+<form action = "" method = "post">
+  {% csrf_token %}
+  <table>
+
+
+    {% for field in form %}
+      <div class="mt-2">
+        <label for="field.id_for_label">
+          {{ field.label }}
+        </label>
+          {{ field }}
+      </div>
+    {% endfor %}
+
+    {% if form.errors %}
+    <div class = "alert alert-danger mx-3 mt-5" role="alert">
+    {% for field in form %}
+      <p>{{ field.errors }}</p>
+    {% endfor %}
+    {% endif %}
+    </div>
+
+  </table>
+  <div class = "mt-4">
+  <a class="btn btn-secondary" href="{{request.META.HTTP_REFERER}}" role="button">戻る</a>
+  <button name="next" value="confirm" type="submit" class="btn btn-info">確認</button>
+
+  <div>
+</form>
+</div>
+</div>
+
+{% endblock %}

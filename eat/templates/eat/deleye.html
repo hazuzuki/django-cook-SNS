@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block body %}
+{% load static %}
+
+
+<form action = "{% url 'eat:index' %}" method = "get" class = "form-row">
+<div class="input-group justify-content-center">
+<div class="col-xl-0 my-xl-3">
+    <select name = "order" class="custom-select" id="inlineFormCustomSelect">
+      {% if request.GET.order == 'old' %}
+      <option value="new" label='新しい順'></option>
+      <option selected value="old" label='古い順'></option>
+      {% else %}
+      <option selected value="new" label='新しい順'></option>
+      <option value="old" label='古い順'></option>
+      {% endif %}
+    </select>
+    {% if request.GET.search %}
+      <input name="search" value="{{ request.GET.search }}" type="hidden">
+    {% endif %}
+    <!-- よんへバージョン
+    {% if search != "None" %}
+      <input name="search" value="{{ search }}" type= "hidden">
+    {% endif %}
+    -->
+
+</div>
+<div class="col-xl-0 my-xl-3">
+    <button class="btn btn-outline-success" type="submit">並べ替え</button>
+  </div>
+  </div>
+</form>
+
+<form action="" method="get">
+  {% csrf_token %}
+<div class="col-xl-0 my-xl-3">
+    <button name = "deletes" value = "{{ request.GET.deletes }}" class="btn btn-outline-success" type="submit">選択消去</button>
+  </div>
+</form>
+
+<form action="" method="post">
+
+  {% csrf_token %}
+  <div class="row">
+    <div class="offset-3 col-6">
+  {% if recipe_count == 0 %}
+    <div class = "d-flex justify-content-center">
+      <div class="card my-5 text-center" style="max-width: 540px">
+        <div class="my-5 mx-5">
+          <p>まだ投稿がありません</p>
+          <p><a href = "{% url 'eat:create' %}">新規作成</a>からレシピを作成してみましょう!!</p>
+        </div>
+      </div>
+    </div>
+  {% else %}
+  <button type="submit">消去</button>
+    {% for object in object_list %}
+    <div class="mr-2">
+    <input type="checkbox" name="delete" value="{{ object.pk }}">
+    </div>
+      <div class = "d-flex justify-content-center">
+        <div class="card mb-3" style="max-width: 540px">
+          <div class="row no-gutters" style='height: 200px'>
+            <div class="col-md-4 my-auto">
+              {% if object.photo %}
+                <img class="card-img" src="{{ object.photo.url }}">
+              {% else %}
+                <img class="card-img" src="{% static 'img/unnamed.png' %}">
+              {% endif %}
+            </div>
+            <div class="col-md-8">
+              <div class="card-body">
+                <h5 class="card-title text-center"><a href = "{% url 'eat:detail' object.id %}">{{ object.recipe_name }}</a></h5>
+                <p class="card-text">材料: {{ object.ingredient }}</p>
+                <p class="card-text">種類: {{ object.type }}</p>
+                <div class ="text-right">
+                  <h8 class="card-text">投稿日: {{ object.date | date:"Y/n/j" }}</h8>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+
+  </div>
+  </form>
+
+
+<!-- リスト　-->
+<div class="row">
+  <div class="offset-3 col-6">
+{% if recipe_count == 0 %}
+  <div class = "d-flex justify-content-center">
+    <div class="card my-5 text-center" style="max-width: 540px">
+      <div class="my-5 mx-5">
+        <p>まだ投稿がありません</p>
+        <p><a href = "{% url 'eat:create' %}">新規作成</a>からレシピを作成してみましょう!!</p>
+      </div>
+    </div>
+  </div>
+{% else %}
+  {% for object in object_list %}
+    <div class = "d-flex justify-content-center">
+      <div class="card mb-3" style="max-width: 540px">
+        <div class="row no-gutters" style='height: 200px'>
+          <div class="col-md-4 my-auto">
+            {% if object.photo %}
+              <img class="card-img" src="{{ object.photo.url }}">
+            {% else %}
+              <img class="card-img" src="{% static 'img/unnamed.png' %}">
+            {% endif %}
+          </div>
+          <div class="col-md-8">
+            <div class="card-body">
+              <h5 class="card-title text-center"><a href = "{% url 'eat:detail' object.id %}">{{ object.recipe_name }}</a></h5>
+              <p class="card-text">材料: {{ object.ingredient }}</p>
+              <p class="card-text">種類: {{ object.type }}</p>
+              <div class ="text-right">
+                <h8 class="card-text">投稿日: {{ object.date | date:"Y/n/j" }}</h8>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+{% endif %}
+</div>
+{% endif %}
+
+
+
+<!-- アイコン　-->
+<div class="clo-3">
+<div class="card text-center" style="width: 15rem;">
+  <div class="my-4">
+    {% if user.icon %}
+      <img src="{{ user.icon.url }}" class="rounded-circle " style="width: 100px;height: 100px;">
+    {% else %}
+      <img src="{% static 'img/animal_koumori.png' %}" class="rounded-circle " style="width: 100px;height: 100px;">
+    {% endif %}
+  </div>
+  <div class="card-body">
+    <p class="card-text">ユーザー名：{{ user.username }}</p>
+    <p class="card-text">レシピの数：{{ recipe_count }}</p>
+    <p class="card-text">開始日：{{ user.date_joined | date:"Y/n/j" }}</p>
+    <p class="card-text text-right"><a href = "{% url 'signup:detail' %}">編集</a></p>
+  </div>
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ページネーション -->
+<nav aria-label="Page navigation example">
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+    <li class="page-item active">
+      <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.order %}&order={{ request.GET.order }}{% endif %}" aria-label="Previous">
+        <span aria-hidden="true">&laquo;</span>
+      </a>
+    </li>
+    {% endif %}
+
+
+    {% for page in paginator.page_range %}
+    <li {% if page == page_obj.number %} class="page-item active" {% endif %}>
+      <a class="page-link" href="?page={{ page }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.order %}&order={{ request.GET.order }}{% endif %}">{{ page }}</a>
+    </li>
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+    <li class="page-item active">
+      <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.order %}&order={{ request.GET.order }}{% endif %}" aria-label="Next">
+        <span aria-hidden="true">&raquo;</span>
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
+
+
+
+
+
+
+
+
+
+
+{% endblock %}

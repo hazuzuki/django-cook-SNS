@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block body %}
+{% load static %}
+{% load humanize %}　
+
+{% block profile2 %}
+<div class="container">
+  <div class="card mb-5" style="max-width: 1300px;">
+    <div class="row no-gutters">
+      <!-- アイコン  -->
+      <div class="my-4 mx-4">
+        {% if users.icon %}
+        <img src="{{ users.icon.url }}" class="rounded-circle" style="width: 100px;height: 100px;">
+        {% else %}
+        <img src="{% static 'img/illustration-2541681_1280.jpg' %}" class="rounded-circle " style="width: 100px;height: 100px;">
+        {% endif %}
+      </div>
+      <!-- プロフィール  -->
+      <div class="col-md-8">
+        <div class="card-body">
+          <div class="row">
+            <div class="ml-3">
+              {% if request.user == users.id %}
+              <p><h2 class="card-title"><a href="{% url 'eat:index' %}">{{ users.username }}</a></h2>
+                {% else %}
+                <p><h2 class="card-title"><a href="{% url 'eat:users' users.id %}">{{ users.username }}</a></h2>
+                  {% endif %}
+                </div>
+                <!-- 編集ボタン　もしくは　フォローボタン　-->
+                <div class="mx-5 mt-4">
+                  {% if request.user.id == users.id %}
+                  <p class="card-text"><a href = "{% url 'signup:detail' %}">編集</a></p>
+                  {% else %}
+                  {% if users in request.user.follow.all %}
+                  <p class="card-text"><button type="button" class="btn btn-primary btn-sm btn-success"><a href = "{% url 'signup:follow' users.id %}"><font color="white">フォロー中</font></a></button></p>
+                  {% else %}
+                  <p class="card-text"><button type="button" class="btn btn-primary btn-sm btn-success"><a href = "{% url 'signup:follow' users.id %}"><font color="white">フォローする</font></a></button></p>
+                  {% endif %}
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="mx-4">
+                  <p class="card-text">レシピの数：{{ recipe_count }}</p>
+                </div>
+                <div class="mr-4">
+                  <p class="card-text"><a href = "{% url 'signup:follow_list' users.id %}">フォロー</a>：{{ users.follow.count }}</p>
+                </div>
+                <div>
+                  <p class="card-text"><a href = "{% url 'signup:follower_list' users.id %}">フォローワー</a>：{{ follower_count }}</p>
+                </div>
+              </div>
+              <p class="card-text ml-2"><a href = "{% url 'eat:good_users_list' users.id %}">いいね一覧</a></p>
+
+              <div class ="text-right">
+                <p class="card-text"><small class="text-muted">開始日：{{ users.date_joined | date:"Y/n/j" }}</small></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endblock profile2 %}
+
+
+
+
+
+    <!-- 編集　-->
+    {% block edit %}
+    <form action = "{% url 'eat:index' %}" method = "get" class = "form-row">
+    {% endblock edit %}
+      {% if object_list.count > 1 %}
+      <div class="input-group justify-content-center">
+        <div class="my-3">
+          <select name = "order" class="custom-select" id="inlineFormCustomSelect">
+            {% if request.GET.order == 'old' %}
+            <option value="new" label='新しい順'></option>
+            <option selected value="old" label='古い順'></option>
+            {% else %}
+            <option selected value="new" label='新しい順'></option>
+            <option value="old" label='古い順'></option>
+            {% endif %}
+          </select>
+          {% if request.GET.search %}
+          <input name="search" value="{{ request.GET.search }}" type="hidden">
+          {% endif %}
+        </div>
+        <div class="my-3">
+          <button class="btn btn-outline-success" type="submit">並べ替え</button>
+        </div>
+      </div>
+      {% endif %}
+    </form>
+
+
+
+    <!-- 選択消去のリスト　-->
+    {% block delete_button %}
+    {% endblock delete_button %}
+
+    {% if request.GET.deletes %}
+    {% block delete %}
+    {% endblock delete %}
+    {% endif %}
+
+
+    <!-- 通常のリスト　-->
+    {% block list %}
+        {% if not object_list %}
+        <div class = "container">
+        <div class = "d-flex justify-content-center">
+          <div class="row">
+        <div class="col-12">
+            <div class="card my-5 text-center" style="max-width: 540px">
+              <div class="my-5 mx-5">
+                <p>該当する投稿はありませんでした</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+        </div>
+        {% endif %}
+
+          {% block recipe %}
+
+          {% for object in object_list %}
+          <div class = "container">
+            <div class = "d-flex justify-content-center">
+            <div class="row">
+              <!-- アイコン　-->
+              <div class="card mb-4">
+              {% block icon %}
+              <div class="row mx-2 my-2">
+              <div class="col-2">
+                {% if object.user.icon  %}
+                <img src="{{ object.user.icon.url }}" class="rounded-circle " style="width: 100px;height: 100px;">
+                {% else %}
+                <img src="{% static 'img/illustration-2541681_1280.jpg' %}" class="rounded-circle " style="width: 100px;height: 100px;">
+                {% endif %}
+              </div>
+                <div class="col5">
+                <div class = "ml-5">
+                  {% if request.user == object.user %}
+                  <a href = "{% url 'eat:index' %}">{{ object.user }}</a>
+                  {% else %}
+                  <a href = "{% url 'eat:users' object.user.id %}">{{ object.user }}</a>
+                  {% endif %}
+                </div>
+              </div>
+              </div>
+            {% endblock icon %}
+
+              {% block recipe_object %}
+              <div class="col-12">
+                <div class="ml-1">
+              <!-- 参考cookの場合、黄色になる -->
+              {% if object.quote == "有り" %}
+              <div class="card alert-warning mb-3" style="max-width: 480px">
+              {% else %}
+              <div class="card mb-3" style="max-width: 480px">
+              {% endif %}
+                  <div class="row no-gutters" style='height: 15rem'>
+                    <div class="col-4 my-5">
+                    {% if object.photo %}
+                      <img class="card-img" src="{{ object.photo.url }}">
+                    {% else %}
+                      <img class="card-img" src="{% static 'img/smIMGL3647_TP_V.jpg' %}">
+                    {% endif %}
+                    </div>
+
+                    <div class="col-8">
+                      <div class="card-body">
+                        <h5 class="card-title ml-4"><a href = "{% url 'eat:detail' object.id %}">{{ object.recipe_name }}</a></h5>
+                        <p class="card-text">材料: {{ object.ingredient | truncatechars:35 }}</p>
+                        <p class="card-text">種類: {{ object.type }}</p>
+                        <div class ="text-right">
+                          {% if request.user in object.good_user.all %}
+                          <p class="card-text"><a href="{% url 'eat:good' object.id %}"><span style="color:#FF0000">&hearts;</span></a>
+                            {% else %}
+                            <p class="card-text"><a href="{% url 'eat:good' object.id %}"><span style="color:#FF0000">&#9825;</span></a>
+                              {% endif %}
+                              {{ object.good_user.count }}&nbsp;&nbsp;&nbsp;&nbsp;
+                              <!-- 投稿が参考cookの場合は、何も表示しない　-->
+                              {% if  object.quote == "有り" %}
+                              <!-- ログインユーザーと投稿者が同じ場合、Urlは表示しない-->
+                              {% elif request.user == object.user %}
+                              参考cook:{{ object.quote_user.count | intword }}
+                              {% else %}
+                              <!-- 自分の投稿じゃない場合と投稿自体が参考cookじゃない場合、urlにアクセス可能　-->
+                              <a href="{% url 'eat:quote_detail' object.id %}">参考cook:</a> {{ object.quote_user.count | intword }}
+                              {% endif %}
+                            </p>
+
+                            {% block date %}
+                            <div class="mt-3">
+                              <small class="text-muted">{{ object.date | date:"Y/n/j" }}</small>
+                            </div>
+                            {% endblock date %}
+                          </div>
+                        </div>　
+                    </div>
+
+                    </div>
+                  </div>
+               </div>
+             </div>
+             </div>
+              {% endblock recipe_object %}
+              </div>
+            </div>
+          </div>
+        </div>
+                {% endfor %}
+
+
+                {% endblock recipe %}
+
+            {% endblock list %}
+
+
+
+
+
+
+
+
+            <!-- ページネーション -->
+
+            <!-- タイムラインの時は、２０からページネーション　-->
+            <div class="container">
+              <nav aria-label="Page navigation example">
+                <ul class="pagination justify-content-center">
+                  {% if page_obj.has_previous %}
+                  <li class="page-item active">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.order %}&order={{ request.GET.order }}{% endif %}" aria-label="Previous">
+                      <span aria-hidden="true">&laquo;</span>
+                    </a>
+                  </li>
+                  {% endif %}
+
+
+                  {% for page in paginator.page_range %}
+                  <li {% if page == page_obj.number %} class="page-item active" {% endif %}>
+                    <a class="page-link" href="?page={{ page }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.order %}&order={{ request.GET.order }}{% endif %}">{{ page }}</a>
+                  </li>
+                  {% endfor %}
+
+                  {% if page_obj.has_next %}
+                  <li class="page-item active">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.order %}&order={{ request.GET.order }}{% endif %}" aria-label="Next">
+                      <span aria-hidden="true">&raquo;</span>
+                    </a>
+                  </li>
+                  {% endif %}
+                </ul>
+              </nav>
+            </div>
+
+
+            {% endblock %}

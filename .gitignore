@@ -1,0 +1,14 @@
+*.pyc
+__pycache__
+db.sqlite3
+eat/tests/coverage_html/
+eat/tests/.coverage
+signup/tests/coverage_html/
+signup/tests/.coverage
+assets/Media
+cover
+htmlcov
+.coverage
+.coveragerc
+.DS_Store
+local_settings.py

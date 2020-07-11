@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<div class="card mx-auto mt-5" style="width: 30rem;">
+  <div align="center" class="my-xl-1">
+    <div class="col-0 my-3">
+  <h3 class = "text-denger">本当に消去してよろしいですか?</h3>
+  <p>消去後は復元できません</p>
+
+  <form method = "post">
+  {% csrf_token %}
+  <a class="btn btn-primary" href="{% url 'eat:detail' object.id %}" role="button">キャンセル</a>
+  <button class = "btn btn-danger" type = "submit">消去</button>
+  </form>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}

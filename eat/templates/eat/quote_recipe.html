@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}　
+
+{% block body %}
+
+<div class = "d-flex justify-content-center">
+  <div class="my-4 mr-4 mt-5">
+    {% if object.user.icon  %}
+      <img src="{{ object.user.icon.url }}" class="rounded-circle " style="width: 100px;height: 100px;">
+    {% else %}
+      <img src="{% static 'img/illustration-2541681_1280.jpg' %}" class="rounded-circle " style="width: 100px;height: 100px;">
+    {% endif %}
+  <div class = "ml-4">
+    {% if request.user == object.user %}
+      <a href = "{% url 'eat:index' %}">{{ object.user }}</a>
+    {% else %}
+      <a href = "{% url 'eat:users' object.user.id %}">{{ object.user }}</a>
+    {% endif %}
+  </div>
+  </div>
+  <div class="card mb-3 mt-5" style="max-width: 540px">
+    <div class="row no-gutters" style='height: 230px'>
+      <div class="col-md-4 my-auto">
+        {% if object.photo %}
+          <img class="card-img" src="{{ object.photo.url }}">
+        {% else %}
+          <img class="card-img" src="{% static 'img/smIMGL3647_TP_V.jpg' %}">
+        {% endif %}
+      </div>
+
+      <div class="col-md-8">
+        <div class="card-body">
+          <h5 class="card-title text-center"><a href = "{% url 'eat:detail' object.id %}">{{ object.recipe_name }}</a></h5>
+          <p class="card-text">材料: {{ object.ingredient | truncatechars:35 }}</p>
+          <p class="card-text">種類: {{ object.type }}</p>
+          <div class ="text-right">
+            {% if request.user in object.good_user.all %}
+            <p class="card-text"><a href="{% url 'eat:good' object.id %}"><span style="color:#FF0000">&hearts;</span></a>
+            {% else %}
+            <p class="card-text"><a href="{% url 'eat:good' object.id %}"><span style="color:#FF0000">&#9825;</span></a>
+            {% endif %}
+                {{ object.good_user.count }}&nbsp;&nbsp;&nbsp;&nbsp;
+                <a href="{% url 'eat:quote_detail' object.id %}">参考cook:</a> {{ object.quote_user.count | intword }}
+            </p>
+
+            <div class = "mt-3">
+            {{ object.date | date:"Y/n/j" }}
+            </div>
+          </div>
+        </div>　
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<div class="card mx-auto mt-5" style="width: 40rem;">
+<div align="center" class="my-xl-5">
+  <div class = "mb-4">
+  <h3>このレシピを参考にして作成しますか？</h3>
+  </div>
+  <div class = "mt-4">
+  <a class="btn btn-secondary" href="{{request.META.HTTP_REFERER}}" role="button">戻る</a>
+  <a class="btn btn-info" href="{% url 'eat:quote_create' object.id %}" role="button">作成</a>
+  <div>
+
+</div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "base_list.html" %}
+
+{% load static %}
+{% load humanize %}
+
+
+
+{% block profile2 %}
+{{ block.super }}
+{% endblock profile2 %}
+
+<!-- 選択消去ボタン　-->
+{% block delete_button %}
+<!-- マイページの時のみ表示　-->
+{% if users == request.user %}
+{% if recipe_count >= 2 and not request.GET.deletes and object_list %}
+<form action="" method="get">
+  <div class="input-group justify-content-center row">
+　<div class="offset-9 col-3 mb-3">
+    <button name = "deletes" value = "deletes" class="btn btn-outline-success" type="submit">選択消去</button>
+  </div>
+  </div>
+</form>
+{% endif %}
+{% endif %}
+{% endblock delete_button %}
+
+
+{% block delete %}
+<!-- マイページの時のみ表示　-->
+{% if users == request.user %}
+<form action="" method="post">
+  {% csrf_token %}
+  <!-- 選択消去時のボタン　-->
+  <div class="row">
+    <div class="offset-1 offset-sm-1 offset-md-4 offset-lg-8 col-6">
+  <a class="btn btn-info" href="{% url 'eat:index' %}" role="button">戻る</a>
+  <button type="submit" class="btn btn-danger">消去</button>
+  </div>
+  </div>
+  <!-- 選択消去時のリスト　-->
+    {% for object in object_list %}
+    <div class = "d-flex justify-content-center">
+    <div class = "row">
+    <!-- チェックボックス　-->
+    <div class = "offset-lg-7 offset-md-3 col-1 ">
+    <input class="ml-3 mt-4" type="checkbox" name="delete" value="{{ object.pk }}">
+    </div>
+    <!-- 投稿　-->
+    <div class = "col-3 ">
+          <div class="card mx-3 my-3" style="width: 26rem">
+            <div class="row no-gutters" style='height: 13rem'>
+              <div class="col-4 my-5 " >
+                {% if object.photo %}
+                  <img class="card-img" src="{{ object.photo.url }}">
+                {% else %}
+                  <img class="card-img" src="{% static 'img/smIMGL3647_TP_V.jpg' %}">
+                {% endif %}
+              </div>
+              <div class="col-8">
+                <div class="card-body">
+                  <h5 class="card-title text-center"><a href = "{% url 'eat:detail' object.id %}">{{ object.recipe_name }}</a></h5>
+                  <p class="card-text">材料: {{ object.ingredient | truncatechars:35 }}</p>
+                  <p class="card-text">種類: {{ object.type }}</p>
+                  <div class ="text-right">
+                    {% if request.user in object.good_user.all %}
+                    <p class="card-text"><a href="{% url 'eat:good' object.id %}"><span style="color:#FF0000">&hearts;</span></a>
+                      {% else %}
+                      <p class="card-text"><a href="{% url 'eat:good' object.id %}"><span style="color:#FF0000">&#9825;</span></a>
+                        {% endif %}
+                        {{ object.good_user.count }}&nbsp;&nbsp;&nbsp;&nbsp;
+                        <!-- 投稿が参考cookの場合は、何も表示しない　-->
+                        {% if  object.quote_recipe != None %}
+                        <!-- ログインユーザーと投稿者が同じ場合、Urlは表示しない-->
+                        {% elif request.user == object.user %}
+                        参考cook:{{ object.quote_user.count | intword }}
+                        {% else %}
+                        <!-- 自分の投稿じゃない場合と投稿自体が参考cookじゃない場合、urlにアクセス可能　-->
+                        <a href="{% url 'eat:quote_detail' object.id %}">参考cook:</a> {{ object.quote_user.count | intword }}
+                        {% endif %}
+                      </p>
+
+                      <div class="mt-3">
+                        <small class="text-muted">{{ object.date | date:"Y/n/j" }}</small>
+                      </div>
+
+                    </div>
+                </div>
+              </div>
+            </div>
+            </div>
+        </div>
+        </div>
+        </div>
+
+
+    {% endfor %}
+  </form>
+
+{% endif %}
+{% endblock delete %}
+
+
+{% block profile %}
+{{ block.super }}
+{% endblock profile %}
+
+
+{% block list %}
+{% if not object_list %}
+<div class = "d-flex justify-content-center">
+  <div class="card my-5 text-center" style="max-width: 540px">
+    <div class="my-5 mx-5">
+      <p>該当する投稿はありませんでした</p>
+    </div>
+  </div>
+</div>
+<div>
+
+{% else %}
+<div class="container">
+<div class = "d-flex justify-content-center">
+  <div class="row">
+{% for object in object_list %}
+    <div class="col-4">
+<div class="card mb-5" style="width: 18rem;">
+  {% if object.photo %}
+    <a href="{% url 'eat:detail' object.id %}"><img class="card-img" src="{{ object.photo.url }}"></a>
+  {% else %}
+    <a href="{% url 'eat:detail' object.id %}"><img class="card-img" src="{% static 'img/smIMGL3647_TP_V.jpg' %}"></a>
+  {% endif %}
+</div>
+</div>
+{% endfor %}
+</div>
+</div>
+</div>
+{% endif %}
+{% endblock list %}

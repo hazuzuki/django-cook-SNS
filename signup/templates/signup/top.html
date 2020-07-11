@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body %}
+
+<!-- トップページ　-->
+<div class="card mx-auto mt-5" style="width: 30rem;">
+ <img src="{% static 'img/food-3048440_1280.jpg' %}" class="card-img-top" alt="...">
+  <div class="card-body">
+    <h3 align="center" class="card-title">CooooK!は料理登録サイトです</h3>
+      <form action = "{% url 'eat:find' %}" method = "get">
+        <p align = "center">レシピを検索してみよう</p>
+          <div class="offset-2">
+          <div class="input-group">
+           <p><input name="search" value="{{ request.GET.search }}" class="form-control" type="search" placeholder="材料,料理名,種類" aria-label="Search"></p>
+           <div>
+            <p><button class="btn btn-outline-success" type="submit">Search</button></p>
+           </div>
+          </div>
+          </div>
+      </form>
+  </div>
+</div>
+
+<!-- サイトマップ　-->
+<div class="container">
+ <div class="mx-auto" style="width: 300px;">
+  <div class="mt-5 mb-5">
+   <div class = "d-flex justify-content-center">
+    <h1>Sitemap</h1>
+   </div>
+
+   <!-- トップページ　-->
+   <section id="sec1">
+    <div class="mt-4">
+      <h5><a class="text-success" href="{% url 'signup:top' %}">トップページ</a></h5>
+       <ul>
+        <li>サイトの説明</li>
+        <li>サイトマップ</li>
+       </ul>
+    </div>
+   </section>
+
+   <!-- マイページ　-->
+   {% if user.is_authenticated %}
+   <section id="sec2">
+    <h5><a class="text-success" href="{% url 'eat:index' %}">マイページ</a></h5>
+     <ul>
+      <li><a class="text-info" href="{% url 'eat:index' %}">レシピ一覧</a></li>
+      <li><a class="text-info" href="{% url 'eat:create' %}">新規作成</a></li>
+      <li>プロフィール</li>
+     </ul>
+   </section>
+   {% endif %}
+
+   <!-- 今日のごはん　-->
+   {% if user.is_authenticated %}
+  　<section id="sec3">
+  　 <h5><a class="text-success" href="{% url 'eat:timeline' %}">今日のごはん</a></h5>
+    </section>
+   {% endif %}
+
+   <!-- ログイン中の場合　-->
+   {% if user.is_authenticated %}
+   <!-- 会員情報変更　-->
+   <section id="sec4">
+    <h5><a class="text-success" href="{% url 'signup:detail' %}">会員情報変更</a></h5>
+     <ul>
+      <li><a class="text-info" href="{% url 'signup:update' user.id %}">ユーザー情報変更</a></li>
+      <li><a class="text-info" href="{% url 'signup:changepass' %}">パスワード変更</a></li>
+      <li><a class="text-info" href="{% url 'signup:delete' user.id %}">退会の手続き</a></li>
+     </ul>
+   </section>
+   <!-- ログインしていない場合　-->
+   {% else %}
+   <!-- 会員登録　-->
+   <section id="sec4">
+    <h5><a class="text-success" href="{% url 'signup:new' %}">会員登録</a></h5>
+   </section>
+   <!-- パスワードをお忘れの方　-->
+   <section id="sec5">
+    <h5><a class="text-success" href="{% url 'signup:password_reset' %}">パスワードをお忘れの方</a></h5>
+   </section>
+  {% endif %}
+
+  </div>
+ </div>
+</div>
+
+
+
+
+
+
+
+
+{% endblock %}

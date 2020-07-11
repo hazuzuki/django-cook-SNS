@@ -1,0 +1,7 @@
+{% extends "base_list.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block edit %}
+<form action = "{% url 'eat:good_users_list' users.id %}" method = "get" class = "form-row">
+{% endblock edit %}

@@ -1,0 +1,22 @@
+{% extends "base_list.html" %}
+
+{% load static %}
+{% load humanize %}
+
+{% block profile2 %}
+{% endblock profile2 %}
+
+{% block edit %}
+<form action = "{% url 'eat:timeline' %}" method = "get" class = "form-row">
+{% endblock edit %}
+
+{% block order %}
+{% endblock order %}
+
+{% block date %}
+<!-- 日付の表示-->
+<p class="card-text">{{ object.date | naturaltime  }}</p>
+{% endblock date %}
+
+{% block profile %}
+{% endblock profile %}

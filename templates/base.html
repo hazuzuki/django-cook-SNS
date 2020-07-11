@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+    <title>eat</title>
+  </head>
+
+
+
+  <body>
+    {% load static %}
+    <!-- navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <a class="nav-link" href="{% url 'signup:top' %}"><h3>CooooK!</h3></a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <!-- ログインしている時 -->
+      {% if user.is_authenticated %}
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+            {% if request.user.icon  %}
+            <a href="{% url 'eat:index' %}">
+              <img src="{{ request.user.icon.url }}" class="rounded-circle " style="width: 50px;height: 50px;">
+            </a>
+            {% else %}
+            <a href="{% url 'eat:index' %}">
+            <img src="{% static 'img/illustration-2541681_1280.jpg' %}" class="rounded-circle " style="width: 50px;height: 50px;">
+            </a>
+            {% endif %}
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href= "{% url 'eat:timeline' %}" > 今日のごはん <span class="sr-only">(current)</span></a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href= "{% url 'eat:index' %}" > マイページ <span class="sr-only">(current)</span></a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'eat:create' %}">新規作成</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href = "{% url 'signup:detail' %}">会員情報</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href = "{% url 'signup:logout' %}">ログアウト</a>
+          </li>
+        </ul>
+        <!-- 検索バーの表示　-->
+        {% if "find" in request.path or "timelin" in request.path or "index" in request.path or "users" in request.path %}
+        {% if "find" in request.path %}
+         <form action = "{% url 'eat:find' %}" method = "get" class="form-inline mx-2 my-2 my-lg-0">
+        {% elif "timeline" in request.path %}
+         <form action = "{% url 'eat:timeline' %}" method = "get" class="form-inline mx-2 my-2 my-lg-0">
+        {% elif "index" in request.path %}
+         <form action = "{% url 'eat:index' %}" method = "get" class="form-inline mx-2 my-2 my-lg-0">
+        {% elif "users" in request.path %}
+         <form action = "{% url 'eat:users' users.id %}" method = "get" class="form-inline mx-2 my-2 my-lg-0">
+        {% else %}
+        {% endif %}
+          <input name = "search" value = "{{ request.GET.search }}" class="form-control mr-sm-0 col-sm-0" type="serch" placeholder="材料,料理名,種類" aria-label="Search">
+          <!-- 並び替え設定時 -->
+          {% if request.GET.order %}
+          <input name = "order" value = "{{ request.GET.order }}" type = "hidden">
+          {% endif %}
+          <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+        </form>
+      </div>
+       {% endif %}
+      <!-- ログインしていない時 -->
+      {% else %}
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+            <a class="nav-link" href = "{% url 'signup:new' %}">会員登録</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href = "{% url 'signup:login' %}">ログイン</a>
+          </li>
+        </ul>
+      </div>
+      {% endif %}
+
+    </nav>
+
+  <!-- success message -->
+  {% if messages %}
+  {% for message in messages %}
+  {% if message.tag == "error" %}
+  <div class="alert alert-success" role="alert">
+    {{ message }}
+  </div>
+  {% else %}
+  <div class="alert alert-warning alert-dismissible fade show" role="alert">
+    {{ message }}
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button>
+  </div>
+  {% endif %}
+  {% endfor %}
+  {% endif %}
+
+
+
+  {% block body %}
+
+  {% endblock %}
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+  </body>
+</html>

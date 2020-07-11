@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<div class="card mx-auto mt-5" style="width: 30rem;">
+<div align="center" class="my-5">
+  <h3>確認フォーム</h3>
+<div class="mt-5">
+  <ul class="list-unstyled">
+    <li>ユーザー名：{{ form.cleaned_data.username }}</li>
+    <li>メールアドレス：{{ form.cleaned_data.email }}</li>
+    <li>パスワード：******</li>
+  </ul>
+</div>
+
+<form action = "" method = "post">
+  {% csrf_token %}
+<table>
+  {% csrf_token %}
+  {% for field in form %}
+  {{field.as_hidden}}
+  {% endfor %}
+</table>
+<div align="center" class="mt-xl-5 mb-xl-3">
+  <button name="next" value="back" type="submit" class="btn btn-secondary">戻る</button>
+  <button name="next" value="regist" type="submit" class="btn btn-info">登録</button>
+</div>
+</form>
+</div>
+</div>
+
+{% endblock %}

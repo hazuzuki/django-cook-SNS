@@ -1,0 +1,11 @@
+{% extends "base_list.html" %}
+{% load static %}
+
+{% block edit %}
+<form action = "{% url 'eat:users' users.id %}" method = "get" class = "form-row">
+{% endblock edit %}
+
+
+
+{% block icon %}
+{% endblock icon %}
