@@ -2,6 +2,18 @@
 {% load static %}
 {% load humanize %}
 
+
+
 {% block edit %}
 <form action = "{% url 'eat:good_users_list' users.id %}" method = "get" class = "form-row">
 {% endblock edit %}
+
+
+
+{% block date %}
+<!-- 日付の表示-->
+<p class="card-text">{{ object.date | naturaltime  }}</p>
+{% endblock date %}
+
+{% block profile %}
+{% endblock profile %}

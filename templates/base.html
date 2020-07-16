@@ -54,7 +54,7 @@
           </li>
         </ul>
         <!-- 検索バーの表示　-->
-        {% if "find" in request.path or "timelin" in request.path or "index" in request.path or "users" in request.path %}
+        {% if "find" in request.path or "timelin" in request.path or "index" in request.path or "users" in request.path or "list" in request.path %}
         {% if "find" in request.path %}
          <form action = "{% url 'eat:find' %}" method = "get" class="form-inline mx-2 my-2 my-lg-0">
         {% elif "timeline" in request.path %}
@@ -63,6 +63,8 @@
          <form action = "{% url 'eat:index' %}" method = "get" class="form-inline mx-2 my-2 my-lg-0">
         {% elif "users" in request.path %}
          <form action = "{% url 'eat:users' users.id %}" method = "get" class="form-inline mx-2 my-2 my-lg-0">
+        {% elif "list" in request.path %}
+        <form action = "{% url 'eat:good_users_list' users.id %}" method = "get" class="form-inline mx-2 my-2 my-lg-0">
         {% else %}
         {% endif %}
           <input name = "search" value = "{{ request.GET.search }}" class="form-control mr-sm-0 col-sm-0" type="serch" placeholder="材料,料理名,種類" aria-label="Search">

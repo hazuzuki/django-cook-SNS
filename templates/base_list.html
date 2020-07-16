@@ -69,9 +69,13 @@
 
     <!-- 編集　-->
     {% block edit %}
+    {% if "index" in request.path %}
     <form action = "{% url 'eat:index' %}" method = "get" class = "form-row">
+    {% else %}
+    <form action = "{% url 'eat:users' users.id %}" method = "get" class = "form-row">
+    {% endif %}
     {% endblock edit %}
-      {% if object_list.count > 1 %}
+      {% if object_list %}
       <div class="input-group justify-content-center">
         <div class="my-3">
           <select name = "order" class="custom-select" id="inlineFormCustomSelect">
@@ -165,9 +169,9 @@
                   <div class="row no-gutters" style='height: 15rem'>
                     <div class="col-4 my-5">
                     {% if object.photo %}
-                      <img class="card-img" src="{{ object.photo.url }}">
+                      <img style="width: 100%; height: 150px; object-fit: cover;" class="card-img" src="{{ object.photo.url }}">
                     {% else %}
-                      <img class="card-img" src="{% static 'img/smIMGL3647_TP_V.jpg' %}">
+                      <img style="width: 100%; height: 150px; object-fit: cover;" class="card-img" src="{% static 'img/smIMGL3647_TP_V.jpg' %}">
                     {% endif %}
                     </div>
 

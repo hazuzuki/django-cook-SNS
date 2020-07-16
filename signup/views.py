@@ -51,11 +51,13 @@ def follow(request, *args, **kwargs):
                 request.user.save()
                 #フォローしていない場合
             else:
-                #request.userのfollowフィールドから閲覧中のユーザーを追加
+                #request.userのfollowフィールドに閲覧中のユーザーを追加
                 request.user.follow.add(look_user)
                 request.user.save()
                 #直前のページにリダイレクト
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+        else:
+            return redirect("eat:index")
     else:
         return redirect("signup:login")
 
@@ -188,21 +190,6 @@ class SignupPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
         return super().form_valid(form)
 
 
-"""
-class SignupDeleteView(View):
-    def get(self, *args, **kwargs):
-        choise = self.request.GET.get("choise")
-        print(choise)
-        if choise == "delete":
-            self.request.user.is_active = False
-            self.request.user.save()
-            SignupLogoutView()
-        elif choise == "back":
-            return redirect("signup:detail")
-        else:
-            return redirect("eat:index")
-"""
-
 class SignupDeleteView(LoginRequiredMixin, OnlyMixin, FormView):
     model = User
     form_class = CustomUpdateForm
@@ -215,17 +202,3 @@ class SignupDeleteView(LoginRequiredMixin, OnlyMixin, FormView):
         self.request.user.save()
         messages.success(self.request, "退会しました。再度アプリを利用するには会員登録が必要です")
         return super().form_valid(form)
-
-
-
-
-"""
-class SignupDeleteView(LoginRequiredMixin, DeleteView):
-    model = User
-    template_name = "signup/signup_delete.html"
-    success_url = reverse_lazy("signup:new")
-
-    def delete(self, request, *args, **kwargs):
-        messages.success(self.request, "退会しました。再度アプリを利用するには会員登録が必要です")
-        return super().delete(request, *args, **kwargs)
-"""

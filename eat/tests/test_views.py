@@ -40,12 +40,13 @@ class OnlyUserRequiredMixin(TestCase):
         self.assertEqual(response.status_code, 403)
 
 
-
-class Good(TestCase):
+#いいね機能のテスト
+class TestGood(TestCase):
     def setUp(self):
         client = Client()
         self.user = User.objects.create_user("sample", "sample@gmail.com", "pass")
 
+#投稿に、いいねしていないとき　url
     def test_recipe_object_none_good_name(self):
         self.client.login(username="sample", password="pass")
         recipe = Recipe.objects.create(
@@ -60,12 +61,17 @@ class Good(TestCase):
             )
         recipe = Recipe.objects.get(id=1)
         self.assertEqual(str(recipe.good_user.all()), "<QuerySet []>")
-        response = self.client.get(reverse('eat:good', kwargs={'pk': 1}), HTTP_REFERER=str(reverse('eat:find')) , follow=True)
+        response = self.client.get(
+            reverse('eat:good', kwargs={'pk': 1}),
+            HTTP_REFERER=str(reverse('eat:find')),
+            follow=True
+            )
         self.assertEqual(response.status_code, 200)
         recipe = Recipe.objects.get(id=1)
         users = User.objects.filter(username='sample')
         self.assertEqual(list(recipe.good_user.all()), list(users))
 
+#投稿に、いいねしていないとき　name
     def test_recipe_object_none_good_url(self):
         self.client.login(username="sample", password="pass")
         recipe = Recipe.objects.create(
@@ -79,13 +85,18 @@ class Good(TestCase):
             user=self.user,
             )
         recipe = Recipe.objects.get(id=1)
-        self.assertEqual(str(recipe.good_user.all()), "<QuerySet []>")
-        response = self.client.get('/eat/1/', HTTP_REFERER=str(reverse('eat:find')) , follow=True)
+        self.assertEqual(str(list(recipe.good_user.all())), "[]")
+        response = self.client.get(
+            '/eat/1/',
+            HTTP_REFERER=str(reverse('eat:find')),
+            follow=True
+            )
         self.assertEqual(response.status_code, 200)
         recipe = Recipe.objects.get(id=1)
         users = User.objects.filter(username='sample')
-        self.assertEqual(list(recipe.good_user.all()), list(users))
+        self.assertEqual(str(list(recipe.good_user.all())), "[<User: sample>]")
 
+#投稿に、いいねしているとき　name
     def test_recipe_object_good_name(self):
         self.client.login(username="sample", password="pass")
         recipe = Recipe.objects.create(
@@ -102,1017 +113,1150 @@ class Good(TestCase):
         recipe = Recipe.objects.get(id=1)
         users = User.objects.filter(username='sample')
         self.assertEqual(list(recipe.good_user.all()), list(users))
-        response = self.client.get(reverse('eat:good', kwargs={'pk': 1}), HTTP_REFERER=str(reverse('eat:find')) , follow=True)
-        self.assertEqual(response.status_code, 200)
-        recipe = Recipe.objects.get(id=1)
-        self.assertEqual(str(recipe.good_user.all()), "<QuerySet []>")
-
-    def test_recipe_object_good_url(self):
-        self.client.login(username="sample", password="pass")
-        recipe = Recipe.objects.create(
-            recipe_name="sample_recipe_name",
-            site="sample.url",
-            memo="sample_memo",
-            photo="sample.img",
-            ingredient="sample_ingredient",
-            type="ご飯",
-            date="2018-10-25 14:30:59",
-            user=self.user,
+        response = self.client.get(
+            reverse('eat:good', kwargs={'pk': 1}),
+            HTTP_REFERER=str(reverse('eat:find')),
+            follow=True
             )
-        recipe.good_user.add(self.user)
-        recipe = Recipe.objects.get(id=1)
-        users = User.objects.filter(username='sample')
-        self.assertEqual(list(recipe.good_user.all()), list(users))
-        response = self.client.get('/eat/1/', HTTP_REFERER=str(reverse('eat:find')) , follow=True)
         self.assertEqual(response.status_code, 200)
         recipe = Recipe.objects.get(id=1)
-        self.assertEqual(str(recipe.good_user.all()), "<QuerySet []>")
+        self.assertEqual(str(list(recipe.good_user.all())), "[]")
 
-    def test_good_not_login(self):
-        response = self.client.get('/eat/1/', HTTP_REFERER=str(reverse('eat:find')) , follow=True)
+#ログアウトしているとき
+    def test_recipe_object_good_name_not_login(self):
+        response = self.client.get(
+            reverse('eat:good', kwargs={'pk': 1}),
+            HTTP_REFERER=str(reverse('eat:find')),
+            follow=True
+            )
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "login.html")
 
 
-class EatGoodUserListView(TestCase):
+class TestEatGoodUsersListView(TestCase):
     def setUp(self):
         client = Client()
         self.user = User.objects.create_user("sample", "sample@gmail.com", "pass")
         user2 = User.objects.create_user("sample2", "sample2@gmail.com", "pass2")
         user3 = User.objects.create_user("sample3", "sample3@gmail.com", "pass3")
+        self.user.follow.add(user2)
         #self.userのオブジェクト
         user_recipe1 = Recipe.objects.create(
-            recipe_name="sample_recipe_name1",
-            site="sample.url1",
-            memo="sample_memo1",
-            photo="sample.img1",
-            ingredient="sample_ingredient1",
+            recipe_name="recipe_name1",
+            ingredient="ingredient1",
             type="ご飯",
-            date="2018-10-25 14:30:59",
             user=self.user,
             public="公開"
             )
         user_recipe2 = Recipe.objects.create(
-            recipe_name="sample_recipe_name1",
-            site="sample.url1",
-            memo="sample_memo1",
-            photo="sample.img1",
-            ingredient="sample_ingredient1",
+            recipe_name="recipe_name2",
+            ingredient="ingredient2",
             type="ご飯",
-            date="2018-10-25 14:30:59",
             user=self.user,
             public="非公開"
             )
-        recipe2 = Recipe.objects.create(
-            recipe_name="sample_recipe_name2",
-            site="sample.url2",
-            memo="sample_memo2",
-            photo="sample.img2",
-            ingredient="sample_ingredient2",
+        user_recipe3 = Recipe.objects.create(
+            recipe_name="recipe_name3",
+            ingredient="ingredient2",
             type="ご飯",
-            date="2018-10-25 14:30:59",
+            user=self.user,
+            public="友達のみ"
+            )
+        #フォローしている人の投稿
+        user2_recipe4 = Recipe.objects.create(
+            recipe_name="recipe_name4",
+            ingredient="ingredient4",
+            type="ご飯",
             user=user2,
             public="公開"
             )
-        recipe3 = Recipe.objects.create(
-            recipe_name="sample_recipe_name3",
-            site="sample.url3",
-            memo="sample_memo3",
-            photo="sample.img3",
-            ingredient="sample_ingredient3",
+        user2_recipe5 = Recipe.objects.create(
+            recipe_name="recipe_name5",
+            ingredient="ingredient5",
             type="ご飯",
-            date="2018-10-25 14:30:59",
             user=user2,
             public="非公開"
             )
-        recipe4 = Recipe.objects.create(
-            recipe_name="sample_recipe_name3",
-            site="sample.url3",
-            memo="sample_memo3",
-            photo="sample.img3",
-            ingredient="sample_ingredient3",
+        user2_recipe6 = Recipe.objects.create(
+            recipe_name="recipe_name6",
+            ingredient="ingredient6",
             type="ご飯",
-            date="2018-10-25 14:30:59",
-            user=users,
+            user=user2,
+            public="友達のみ"
             )
 
-    def test_url_none_object(self):
-
+#いいねしていない場合 urlでのアクセス
+    def test_url_none_good(self):
         self.client.login(username="sample", password="pass")
-        response = self.client.get("/eat/list/1/")
+        response = self.client.get('/eat/list/1/')
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "eat/recipe_good_users_list.html")
-        print(response.context["recipe_count"])
+        self.assertEqual(str(response.context["object_list"]), '<QuerySet []>')
+        self.assertEqual(response.context["recipe_count"], 3)
+        self.assertEqual(response.context["users"], self.user)
+        self.assertEqual(response.context["follower_count"], 0)
 
-
-
-
-#delateView アクセスのしかた
-#object作成
-#検索、並び替えのテスト未
-#投稿が１つと２つで場合わけ
-class TestEatListView(TestCase):
-#ユーザー作成　ログイン
-    def setUp(self):
-        client = Client()
-        self.user = User.objects.create_user("sample", "sample@gmail.com", "pass")
-
-#投稿なし　url
-    def test_url_none_object(self):
+#いいねしていない場合 nameでのアクセス
+    def test_name_none_good(self):
         self.client.login(username="sample", password="pass")
-        response = self.client.get("/eat/")
+        response = self.client.get(reverse("eat:good_users_list", kwargs={'users_id': 1}))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertTemplateUsed(response, "eat/recipe_good_users_list.html")
+        self.assertEqual(str(response.context["object_list"]), '<QuerySet []>')
+        self.assertEqual(response.context["recipe_count"], 3)
+        self.assertEqual(response.context["users"], self.user)
+        self.assertEqual(response.context["follower_count"], 0)
 
-#投稿なし　name
-    def test_name_none_object(self):
+#フォローしているユーザーがいる場合
+    def test_name_follow_good(self):
         self.client.login(username="sample", password="pass")
-        response = self.client.get(reverse("eat:index"))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(response.context["recipe_list"], [])
-        self.assertTrue("is_paginated" in response.context)
-        self.assertTrue(response.context["is_paginated"] == False)
-        self.assertEqual(len(response.context['recipe_list']), 0)
-
-#投稿１つ　url
-    def test_url_one_object(self):
-        self.client.login(username="sample", password="pass")
-        recipe = Recipe.objects.create(
-            recipe_name="sample_recipe_name",
-            site="sample.url",
-            memo="sample_memo",
-            photo="sample.img",
-            ingredient="sample_ingredient",
-            type="ご飯",
-            date="2018-10-25 14:30:59",
-            user=self.user,
+        user2_objects = Recipe.objects.filter(user=2)
+        #user2の投稿をいいねする
+        for user2_object in user2_objects:
+            user2_object.good_user.add(self.user)
+        response = self.client.get(
+            reverse("eat:good_users_list", kwargs={'users_id': 1})
             )
-        response = self.client.get("/eat/")
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-
-
-#投稿１つ　name
-    def test_name_one_object(self):
-        self.client.login(username="sample", password="pass")
-        recipe = Recipe.objects.create(
-            recipe_name="sample_recipe_name",
-            site="sample.url",
-            memo="sample_memo",
-            photo="sample.img",
-            ingredient="sample_ingredient",
-            type="ご飯",
-            date="2018-10-25 14:30:59",
-            user=self.user,
+        self.assertTemplateUsed(response, "eat/recipe_good_users_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name6>, <Recipe: recipe_name4>]"
             )
-        object_list = Recipe.objects.filter(user=self.user).order_by("-date")
-        response = self.client.get(reverse("eat:index"))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertEqual(str(response.context["user"]), "sample")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-        self.assertTrue("is_paginated" in response.context)
-        self.assertTrue(response.context["is_paginated"] == False)
-        self.assertEqual(len(response.context['recipe_list']), 1)
-        self.assertContains(response, "sample_recipe_name")
-        self.assertContains(response, "sample.img")
-        self.assertContains(response, "sample_ingredient")
-        self.assertContains(response, "ご飯")
+        self.assertEqual(response.context["recipe_count"], 3)
+        self.assertEqual(response.context["users"], self.user)
+        self.assertEqual(response.context["follower_count"], 0)
 
-
-
-#投稿２つ　name
-    def test_two_objeccts(self):
-        self.client.login(username="sample", password="pass")
-        recipe = Recipe.objects.create(
-            recipe_name="sample_recipe_name",
-            site="sample.url",
-            memo="sample_memo",
-            photo="sample.img",
-            ingredient="sample_ingredient",
-            type="ご飯",
-            date="2018-10-25 14:30:59",
-            user=self.user,
-            )
-        recipe2 = Recipe.objects.create(
-            recipe_name="sample_recipe_name2",
-            site="sample.url2",
-            memo="sample_memo2",
-            photo="sample.img2",
-            ingredient="sample_ingredient2",
-            type="ご飯",
-            date="2018-10-25 14:30:59",
-            user=self.user,
-            )
-        object_list = Recipe.objects.filter(user=self.user).order_by("-date")
-        response = self.client.get(reverse("eat:index"))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertEqual(str(response.context["user"]), "sample")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-        self.assertTrue("is_paginated" in response.context)
-        self.assertTrue(response.context["is_paginated"] == False)
-        self.assertEqual(len(response.context["recipe_list"]), 2)
-        self.assertContains(response, "sample_recipe_name")
-        self.assertContains(response, "sample.img")
-        self.assertContains(response, "sample_ingredient")
-        self.assertContains(response, "ご飯")
-        self.assertContains(response, "sample_recipe_name2")
-        self.assertContains(response, "sample.img2")
-        self.assertContains(response, "sample_ingredient2")
-        self.assertContains(response, "ご飯")
-
-
-
-
-#1ページ目　url
-    def test_url_pagination_pagi1(self):
-        self.client.login(username="sample", password="pass")
-        number_of_recipe = 8
-        for recipe in range(number_of_recipe):
-            Recipe.objects.create(
-                recipe_name="sample",
-                site="sample.url",
-                memo="sample",
-                photo="sample.img",
-                ingredient="sample",
-                type="ご飯",
-                date="2018-10-25 14:30:59",
-                user=self.user,
-                )
-        self.client.login(username="sample", password="pass")
-        response = self.client.get("/eat/")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-
-
-#1ページ目　name
-    def test_name_pagination_pagi1(self):
-        self.client.login(username="sample", password="pass")
-        number_of_recipe = 8
-        for recipe in range(number_of_recipe):
-            Recipe.objects.create(
-                recipe_name="sample",
-                site="sample.url",
-                memo="sample",
-                photo="sample.img",
-                ingredient="sample",
-                type="ご飯",
-                date="2018-10-25 14:30:59",
-                user=self.user,
-                )
-        object_list = Recipe.objects.filter(user=self.user).order_by("-date")
-        object_list = object_list[:5]
-        self.client.login(username="sample", password="pass")
-        response = self.client.get(reverse("eat:index") + "?page=1")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertEqual(str(response.context["user"]), "sample")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-        self.assertTrue("is_paginated" in response.context)
-        self.assertTrue(response.context["is_paginated"] == True)
-        self.assertEqual(len(response.context["recipe_list"]), 5)
-
-#2ページ目　name
-    def test_name_pagination_pagi2(self):
-        self.client.login(username="sample", password="pass")
-        number_of_recipe = 8
-        for recipe in range(number_of_recipe):
-            Recipe.objects.create(
-                recipe_name="sample",
-                site="sample.url",
-                memo="sample",
-                photo="sample.img",
-                ingredient="sample",
-                type="ご飯",
-                date="2018-10-25 14:30:59",
-                user=self.user,
-                )
-        object_list = Recipe.objects.filter(user=self.user).order_by("-date")
-        object_list = object_list[5:10]
-        self.client.login(username="sample", password="pass")
-        response = self.client.get(reverse("eat:index") + "?page=2")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertEqual(str(response.context["user"]), "sample")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-        self.assertTrue("is_paginated" in response.context)
-        self.assertTrue(response.context["is_paginated"] == True)
-        self.assertEqual(len(response.context["recipe_list"]), 3)
-
-#ログインしていない時　url
-    def test_url_not_login(self):
-        recipe = Recipe.objects.create(
-            recipe_name="sample_recipe_name",
-            site="sample.url",
-            memo="sample_memo",
-            photo="sample.img",
-            ingredient="sample_ingredient",
-            type="ご飯",
-            date="2018-10-25 14:30:59",
-            user=self.user,
-            )
-        response = self.client.get("/eat/")
-        self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, '/signup/login/?next=/eat/')
-
-
-
-#ログインしていない時　name
+#ログインしていない場合
     def test_name_not_login(self):
-        recipe = Recipe.objects.create(
-            recipe_name="sample_recipe_name",
-            site="sample.url",
-            memo="sample_memo",
-            photo="sample.img",
-            ingredient="sample_ingredient",
-            type="ご飯",
-            date="2018-10-25 14:30:59",
-            user=self.user,
+        user2_objects = Recipe.objects.filter(user=2)
+        #user2の投稿をいいねする
+        for user2_object in user2_objects:
+            user2_object.good_user.add(self.user)
+        response = self.client.get(
+            reverse("eat:good_users_list", kwargs={'users_id': 1})
             )
-        response = self.client.get(reverse("eat:index"))
-        self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, '/signup/login/?next=/eat/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_good_users_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            '[<Recipe: recipe_name4>]'
+            )
+        self.assertEqual(response.context["recipe_count"], 3)
+        self.assertEqual(response.context["users"], self.user)
+        self.assertEqual(response.context["follower_count"], 0)
 
+#並び替え　order=old
+    def test_url_order_old(self):
+        self.client.login(username="sample", password="pass")
+        user2_objects = Recipe.objects.filter(user=2)
+        #user2の投稿をいいねする
+        for user2_object in user2_objects:
+            user2_object.good_user.add(self.user)
+        response = self.client.get("/eat/list/1/?order=old")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name4>, <Recipe: recipe_name6>]"
+            )
 
-#並び替え
+#並び替え　order=new
     def test_name_order_new(self):
         self.client.login(username="sample", password="pass")
-        recipe1 = Recipe.objects.create(
-            recipe_name="sample1",
-            site="sample.url1",
-            memo="sample_memo1",
-            photo="sample.img1",
-            ingredient="sample_ingredient1",
-            type="ご飯",
+        user2_objects = Recipe.objects.filter(user=2)
+        #user2の投稿をいいねする
+        for user2_object in user2_objects:
+            user2_object.good_user.add(self.user)
+        response = self.client.get(
+            reverse("eat:good_users_list", kwargs={'users_id': 1}),
+            {"order": "new"}
             )
-        recipe2 = Recipe.objects.create(
-            recipe_name="sample2",
-            site="sample.url2",
-            memo="sample_memo2",
-            photo="sample.img2",
-            ingredient="sample_ingredient1",
-            type="ご飯",
-            )
-        recipe3 = Recipe.objects.create(
-            recipe_name="sample3",
-            site="sample.url3",
-            memo="sample_memo3",
-            photo="sample.img3",
-            ingredient="sample_ingredient3",
-            type="ご飯",
-            )
-        object_list = Recipe.objects.filter(user=self.user).order_by("-date")
-        response = self.client.get(reverse("eat:index"), {'order':'new'})
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name6>, <Recipe: recipe_name4>]"
+            )
 
-    def test_name_order_old(self):
+#検索　serch=ご飯
+    def test_name_search_word(self):
         self.client.login(username="sample", password="pass")
-        recipe1 = Recipe.objects.create(
-            recipe_name="sample1",
-            site="sample.url1",
-            memo="sample_memo1",
-            photo="sample.img1",
-            ingredient="sample_ingredient1",
-            type="ご飯",
+        user2_objects = Recipe.objects.filter(user=2)
+        #user2の投稿をいいねする
+        for user2_object in user2_objects:
+            user2_object.good_user.add(self.user)
+        response = self.client.get(
+            reverse("eat:good_users_list", kwargs={'users_id': 1}),
+            {"search": "ご飯"}
             )
-        recipe2 = Recipe.objects.create(
-            recipe_name="sample2",
-            site="sample.url2",
-            memo="sample_memo2",
-            photo="sample.img2",
-            ingredient="sample_ingredient1",
-            type="ご飯",
-            )
-        recipe3 = Recipe.objects.create(
-            recipe_name="sample3",
-            site="sample.url3",
-            memo="sample_memo3",
-            photo="sample.img3",
-            ingredient="sample_ingredient3",
-            type="ご飯",
-            )
-        object_list = Recipe.objects.filter(user=self.user)
-        response = self.client.get(reverse("eat:index"), {'order':'old'})
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
+        self.assertTemplateUsed(response, "eat/recipe_good_users_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name6>, <Recipe: recipe_name4>]"
+            )
 
-
-    def test_name_filter(self):
+#検索　serch=ご飯, order=new
+    def test_name_search_word_and_order_new(self):
         self.client.login(username="sample", password="pass")
-        recipe1 = Recipe.objects.create(
-            recipe_name="sample1",
-            site="sample.url1",
-            memo="sample_memo1",
-            photo="sample.img1",
-            ingredient="sample_ingredient1",
-            type="ご飯",
+        user2_objects = Recipe.objects.filter(user=2)
+        #user2の投稿をいいねする
+        for user2_object in user2_objects:
+            user2_object.good_user.add(self.user)
+        response = self.client.get(
+            reverse("eat:good_users_list", kwargs={'users_id': 1}),
+            {'order':'new', 'search':'ご飯'}
             )
-        recipe2 = Recipe.objects.create(
-            recipe_name="sample2",
-            site="sample.url2",
-            memo="sample_memo2",
-            photo="sample.img2",
-            ingredient="sample_ingredient1",
-            type="ご飯",
-            )
-        recipe3 = Recipe.objects.create(
-            recipe_name="sample3",
-            site="sample.url3",
-            memo="sample_memo3",
-            photo="sample.img3",
-            ingredient="sample_ingredient3",
-            type="ご飯",
-            )
-        search = "肉じゃが"
-        object_list = Recipe.objects.filter(
-            Q(user=self.user),
-            Q(recipe_name__contains=search)|
-            Q(ingredient__contains=search)|
-            Q(type__contains=search)
-            ).order_by("-date")
-        response = self.client.get(reverse("eat:index"), {'search':'肉じゃが'})
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
+        self.assertTemplateUsed(response, "eat/recipe_good_users_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name6>, <Recipe: recipe_name4>]"
+            )
 
-
-    def test_name_order_filter_none_object(self):
+#検索　serch=ご飯, order=old
+    def test_name_search_word_and_order_old(self):
         self.client.login(username="sample", password="pass")
-        recipe1 = Recipe.objects.create(
-            recipe_name="sample1",
-            site="sample.url1",
-            memo="sample_memo1",
-            photo="sample.img1",
-            ingredient="sample_ingredient1",
-            type="ご飯",
+        user2_objects = Recipe.objects.filter(user=2)
+        #user2の投稿をいいねする
+        for user2_object in user2_objects:
+            user2_object.good_user.add(self.user)
+        response = self.client.get(
+            reverse("eat:good_users_list", kwargs={'users_id': 1}),
+            {'order':'old', 'search':'ご飯'}
             )
-        recipe2 = Recipe.objects.create(
-            recipe_name="sample2",
-            site="sample.url2",
-            memo="sample_memo2",
-            photo="sample.img2",
-            ingredient="sample_ingredient1",
-            type="ご飯",
-            )
-        recipe3 = Recipe.objects.create(
-            recipe_name="sample3",
-            site="sample.url3",
-            memo="sample_memo3",
-            photo="sample.img3",
-            ingredient="sample_ingredient3",
-            type="ご飯",
-            )
-        search = "カーテン"
-        object_list = Recipe.objects.filter(
-            Q(user=self.user),
-            Q(recipe_name__contains=search)|
-            Q(ingredient__contains=search)|
-            Q(type__contains=search)
-            ).order_by("-date")
-        response = self.client.get(reverse("eat:index"), {'search':'カーテン'})
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
+        self.assertTemplateUsed(response, "eat/recipe_good_users_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name4>, <Recipe: recipe_name6>]"
+            )
 
-    def test_name_order_filter_none(self):
-        self.client.login(username="sample", password="pass")
-        recipe1 = Recipe.objects.create(
-            recipe_name="sample1",
-            site="sample.url1",
-            memo="sample_memo1",
-            photo="sample.img1",
-            ingredient="sample_ingredient1",
-            type="ご飯",
-            )
-        recipe2 = Recipe.objects.create(
-            recipe_name="sample2",
-            site="sample.url2",
-            memo="sample_memo2",
-            photo="sample.img2",
-            ingredient="sample_ingredient1",
-            type="ご飯",
-            )
-        recipe3 = Recipe.objects.create(
-            recipe_name="sample3",
-            site="sample.url3",
-            memo="sample_memo3",
-            photo="sample.img3",
-            ingredient="sample_ingredient3",
-            type="ご飯",
-            )
-        search = ""
-        object_list = Recipe.objects.filter(
-            Q(user=self.user),
-            Q(recipe_name__contains=search)|
-            Q(ingredient__contains=search)|
-            Q(type__contains=search)
-            ).order_by("-date")
-        response = self.client.get(reverse("eat:index"), {'search':''})
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-
-    def test_name_order_new_filter(self):
-        self.client.login(username="sample", password="pass")
-        self.client.login(username="sample", password="pass")
-        recipe1 = Recipe.objects.create(
-            recipe_name="sample1",
-            site="sample.url1",
-            memo="sample_memo1",
-            photo="sample.img1",
-            ingredient="sample_ingredient1",
-            type="ご飯",
-            )
-        recipe2 = Recipe.objects.create(
-            recipe_name="sample2",
-            site="sample.url2",
-            memo="sample_memo2",
-            photo="sample.img2",
-            ingredient="sample_ingredient1",
-            type="ご飯",
-            )
-        recipe3 = Recipe.objects.create(
-            recipe_name="sample3",
-            site="sample.url3",
-            memo="sample_memo3",
-            photo="sample.img3",
-            ingredient="sample_ingredient3",
-            type="ご飯",
-            )
-        search = "にんじん"
-        object_list = Recipe.objects.filter(
-            Q(user=self.user),
-            Q(recipe_name__contains=search)|
-            Q(ingredient__contains=search)|
-            Q(type__contains=search)
-            ).order_by("-date")
-        response = self.client.get(reverse("eat:index"), {'order':'new', 'search':'にんじん'})
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-
-    def test_name_order_old_filter(self):
-        self.client.login(username="sample", password="pass")
-        recipe1 = Recipe.objects.create(
-            recipe_name="sample1",
-            site="sample.url1",
-            memo="sample_memo1",
-            photo="sample.img1",
-            ingredient="sample_ingredient1",
-            type="ご飯",
-            )
-        recipe2 = Recipe.objects.create(
-            recipe_name="sample2",
-            site="sample.url2",
-            memo="sample_memo2",
-            photo="sample.img2",
-            ingredient="sample_ingredient1",
-            type="ご飯",
-            )
-        recipe3 = Recipe.objects.create(
-            recipe_name="sample3",
-            site="sample.url3",
-            memo="sample_memo3",
-            photo="sample.img3",
-            ingredient="sample_ingredient3",
-            type="ご飯",
-            )
-        search = "にんじん"
-        object_list = Recipe.objects.filter(
-            Q(user=self.user),
-            Q(recipe_name__contains=search)|
-            Q(ingredient__contains=search)|
-            Q(type__contains=search)
-            ).order_by("-date")
-        response = self.client.get(reverse("eat:index"), {'order':'old', 'search':'にんじん'})
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-
-    def test_name_pagination_pagi1_serch_order_new(self):
-        self.client.login(username="sample", password="pass")
-        number_of_recipe = 8
-        for recipe in range(number_of_recipe):
-            recipe = recipe+1
-            Recipe.objects.create(
-                recipe_name="sample"+str(recipe),
-                site="sample.url",
-                memo="sample",
-                photo="sample.img",
-                ingredient="にんじん",
-                type="ご飯",
-                )
-        recipe9 = Recipe.objects.create(
-            recipe_name="sample9",
-            site="sample.url",
-            memo="sample",
-            photo="sample.img",
-            ingredient="じゃがいも",
-            type="ご飯",
-            )
-        search = "にんじん"
-        object_list = Recipe.objects.filter(
-            Q(user=self.user),
-            Q(recipe_name__contains=search)|
-            Q(ingredient__contains=search)|
-            Q(type__contains=search)
-            ).order_by("-date")
-        object_list = object_list[:5]
-        response = self.client.get("/eat/?page=1&search=にんじん&order=new")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-        self.assertTrue("is_paginated" in response.context)
-        self.assertTrue(response.context["is_paginated"] == True)
-        self.assertEqual(len(response.context["recipe_list"]), 5)
-
-    def test_name_pagination_pagi2_serch_order_new(self):
-        self.client.login(username="sample", password="pass")
-        number_of_recipe = 8
-        for recipe in range(number_of_recipe):
-            recipe = recipe+1
-            Recipe.objects.create(
-                recipe_name="sample"+str(recipe),
-                site="sample.url",
-                memo="sample",
-                photo="sample.img",
-                ingredient="にんじん",
-                type="ご飯",
-                )
-        recipe9 = Recipe.objects.create(
-            recipe_name="sample9",
-            site="sample.url",
-            memo="sample",
-            photo="sample.img",
-            ingredient="じゃがいも",
-            type="ご飯",
-            )
-        search = "にんじん"
-        object_list = Recipe.objects.filter(
-            Q(user=self.user),
-            Q(recipe_name__contains=search)|
-            Q(ingredient__contains=search)|
-            Q(type__contains=search)
-            ).order_by("-date")
-        object_list = object_list[5:10]
-        response = self.client.get("/eat/?page=2&search=にんじん&order=new")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-        self.assertTrue("is_paginated" in response.context)
-        self.assertTrue(response.context["is_paginated"] == True)
-        self.assertEqual(len(response.context["recipe_list"]), 3)
-
-    def test_name_pagination_pagi1_serch_order_old(self):
-        self.client.login(username="sample", password="pass")
-        number_of_recipe = 8
-        for recipe in range(number_of_recipe):
-            recipe = recipe+1
-            Recipe.objects.create(
-                recipe_name="sample"+str(recipe),
-                site="sample.url",
-                memo="sample",
-                photo="sample.img",
-                ingredient="にんじん",
-                type="ご飯",
-                )
-        recipe9 = Recipe.objects.create(
-            recipe_name="sample9",
-            site="sample.url",
-            memo="sample",
-            photo="sample.img",
-            ingredient="じゃがいも",
-            type="ご飯",
-            )
-        search = "にんじん"
-        object_list = Recipe.objects.filter(
-            Q(user=self.user),
-            Q(recipe_name__contains=search)|
-            Q(ingredient__contains=search)|
-            Q(type__contains=search)
-            ).order_by("-date")
-        object_list = object_list[:5]
-        response = self.client.get("/eat/?page=1&search=にんじん&order=old")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-        self.assertTrue("is_paginated" in response.context)
-        self.assertTrue(response.context["is_paginated"] == True)
-        self.assertEqual(len(response.context["recipe_list"]), 5)
-
-    def test_name_pagination_pagi2_serch_order_old(self):
-        self.client.login(username="sample", password="pass")
-        number_of_recipe = 8
-        for recipe in range(number_of_recipe):
-            recipe = recipe+1
-            Recipe.objects.create(
-                recipe_name="sample"+str(recipe),
-                site="sample.url",
-                memo="sample",
-                photo="sample.img",
-                ingredient="にんじん",
-                type="ご飯",
-                )
-        recipe9 = Recipe.objects.create(
-            recipe_name="sample9",
-            site="sample.url",
-            memo="sample",
-            photo="sample.img",
-            ingredient="じゃがいも",
-            type="ご飯",
-            )
-        search = "にんじん"
-        object_list = Recipe.objects.filter(
-            Q(user=self.user),
-            Q(recipe_name__contains=search)|
-            Q(ingredient__contains=search)|
-            Q(type__contains=search)
-            ).order_by("-date")
-        object_list = object_list[5:10]
-        response = self.client.get("/eat/?page=2&search=にんじん&order=old")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-        self.assertTrue("is_paginated" in response.context)
-        self.assertTrue(response.context["is_paginated"] == True)
-        self.assertEqual(len(response.context["recipe_list"]), 3)
-
-    def test_name_pagination_pagi1_order_old(self):
-        self.client.login(username="sample", password="pass")
-        number_of_recipe = 8
-        for recipe in range(number_of_recipe):
-            recipe = recipe+1
-            Recipe.objects.create(
-                recipe_name="sample"+str(recipe),
-                site="sample.url",
-                memo="sample",
-                photo="sample.img",
-                ingredient="にんじん",
-                type="ご飯",
-                )
-        recipe9 = Recipe.objects.create(
-            recipe_name="sample9",
-            site="sample.url",
-            memo="sample",
-            photo="sample.img",
-            ingredient="じゃがいも",
-            type="ご飯",
-            )
-        object_list = Recipe.objects.filter(user=self.user)
-        object_list = object_list[:5]
-        response = self.client.get("/eat/?page=1&order=old")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-        self.assertTrue("is_paginated" in response.context)
-        self.assertTrue(response.context["is_paginated"] == True)
-        self.assertEqual(len(response.context["recipe_list"]), 5)
-
-    def test_name_pagination_pagi2_order_old(self):
-        self.client.login(username="sample", password="pass")
-        number_of_recipe = 8
-        for recipe in range(number_of_recipe):
-            recipe = recipe+1
-            Recipe.objects.create(
-                recipe_name="sample"+str(recipe),
-                site="sample.url",
-                memo="sample",
-                photo="sample.img",
-                ingredient="にんじん",
-                type="ご飯",
-                )
-        recipe9 = Recipe.objects.create(
-            recipe_name="sample9",
-            site="sample.url",
-            memo="sample",
-            photo="sample.img",
-            ingredient="じゃがいも",
-            type="ご飯",
-            )
-        object_list = Recipe.objects.filter(user=self.user)
-        object_list = object_list[5:10]
-        response = self.client.get("/eat/?page=2&order=old")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-        self.assertTrue("is_paginated" in response.context)
-        self.assertTrue(response.context["is_paginated"] == True)
-        self.assertEqual(len(response.context["recipe_list"]), 4)
-
-    def test_name_pagination_pagi1_serch(self):
-        self.client.login(username="sample", password="pass")
-        number_of_recipe = 8
-        for recipe in range(number_of_recipe):
-            recipe = recipe+1
-            Recipe.objects.create(
-                recipe_name="sample"+str(recipe),
-                site="sample.url",
-                memo="sample",
-                photo="sample.img",
-                ingredient="にんじん",
-                type="ご飯",
-                )
-        recipe9 = Recipe.objects.create(
-            recipe_name="sample9",
-            site="sample.url",
-            memo="sample",
-            photo="sample.img",
-            ingredient="じゃがいも",
-            type="ご飯",
-            )
-        search = "にんじん"
-        object_list = Recipe.objects.filter(
-            Q(user=self.user),
-            Q(recipe_name__contains=search)|
-            Q(ingredient__contains=search)|
-            Q(type__contains=search)
-            ).order_by("-date")
-        object_list = object_list[:5]
-        response = self.client.get("/eat/?page=1&search=にんじん")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-        self.assertTrue("is_paginated" in response.context)
-        self.assertTrue(response.context["is_paginated"] == True)
-        self.assertEqual(len(response.context["recipe_list"]), 5)
-
-    def test_name_pagination_pagi2_serch(self):
-        self.client.login(username="sample", password="pass")
-        number_of_recipe = 8
-        for recipe in range(number_of_recipe):
-            recipe = recipe+1
-            Recipe.objects.create(
-                recipe_name="sample"+str(recipe),
-                site="sample.url",
-                memo="sample",
-                photo="sample.img",
-                ingredient="にんじん",
-                type="ご飯",
-                )
-        recipe9 = Recipe.objects.create(
-            recipe_name="sample9",
-            site="sample.url",
-            memo="sample",
-            photo="sample.img",
-            ingredient="じゃがいも",
-            type="ご飯",
-            )
-        search = "にんじん"
-        object_list = Recipe.objects.filter(
-            Q(user=self.user),
-            Q(recipe_name__contains=search)|
-            Q(ingredient__contains=search)|
-            Q(type__contains=search)
-            ).order_by("-date")
-        object_list = object_list[5:10]
-        response = self.client.get("/eat/?page=2&search=にんじん")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-        self.assertTrue("is_paginated" in response.context)
-        self.assertTrue(response.context["is_paginated"] == True)
-        self.assertEqual(len(response.context["recipe_list"]), 3)
-
-    def test_name_delete(self):
-        self.client.login(username="sample", password="pass")
-        recipe1 = Recipe.objects.create(
-            recipe_name="ロールキャベツ",
-            site="sample.url1",
-            memo="sample_memo1",
-            photo="sample.img1",
-            ingredient="sample_ingredient1",
-            type="ご飯",
-            )
-        recipe2 = Recipe.objects.create(
-            recipe_name="肉じゃが",
-            site="sample.url2",
-            memo="sample_memo2",
-            photo="sample.img2",
-            ingredient="にんじん",
-            type="ご飯",
-            )
-        recipe3 = Recipe.objects.create(
-            recipe_name="トマトスープ",
-            site="sample.url3",
-            memo="sample_memo3",
-            photo="sample.img3",
-            ingredient="にんじん",
-            type="ご飯",
-            )
-        object_list = Recipe.objects.filter(user=self.user).order_by("-date")
-        response = self.client.get(reverse("eat:index"), {'deletes':'deletes'})
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-        recipe_pks = ['1']
-        Recipe.objects.filter(pk__in=recipe_pks).delete()
-        object_list = Recipe.objects.filter(user=self.user).order_by("-date")
-        response = self.client.get(reverse("eat:index"))
-        self.assertTemplateUsed(response, "eat/recipe_list.html")
-        self.assertQuerysetEqual(list(response.context["recipe_list"]), [repr(s) for s in object_list])
-
-
-class TestEatDetailView(TestCase):
+class TestEatListView(TestCase):
     def setUp(self):
         client = Client()
         self.user = User.objects.create_user("sample", "sample@gmail.com", "pass")
-        recipe = Recipe.objects.create(
-            recipe_name="sample_recipe_name",
-            site="sample.url",
-            memo="sample_memo",
-            photo="sample.img",
-            ingredient="sample_ingredient",
+        #self.userのオブジェクト
+        user_recipe1 = Recipe.objects.create(
+            recipe_name="recipe_name1",
+            ingredient="ingredient1",
             type="ご飯",
+            user=self.user,
+            public="公開"
+            )
+        user_recipe2 = Recipe.objects.create(
+            recipe_name="recipe_name2",
+            ingredient="ingredient2",
+            type="ご飯",
+            user=self.user,
+            public="非公開"
+            )
+        user_recipe3 = Recipe.objects.create(
+            recipe_name="recipe_name3",
+            ingredient="ingredient2",
+            type="おかず",
+            user=self.user,
+            public="友達のみ"
             )
 
-    def test_url_none_object(self):
-        self.client.login(username="sample", password="pass")
-        response = self.client.get("/eat/detail/2/")
-        self.assertEqual(response.status_code, 404)
+#ログインしていない場合
+    def test_name_not_login(self):
+        response = self.client.get(reverse('eat:index'), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "login.html")
 
-    def test_name_none_object(self):
+#いいねしていない場合 urlでのアクセス
+    def test_url(self):
         self.client.login(username="sample", password="pass")
-        response = self.client.get(reverse("eat:detail", kwargs={'pk':2}))
-        self.assertEqual(response.status_code, 404)
+        response = self.client.get('/eat/index/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name3>, <Recipe: recipe_name2>, <Recipe: recipe_name1>]"
+            )
+        self.assertEqual(response.context["recipe_count"], 3)
+        self.assertEqual(response.context["users"], self.user)
+        self.assertEqual(response.context["follower_count"], 0)
+
+#いいねしていない場合 nameでのアクセス
+    def test_name(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(reverse('eat:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name3>, <Recipe: recipe_name2>, <Recipe: recipe_name1>]"
+            )
+        self.assertEqual(response.context["recipe_count"], 3)
+        self.assertEqual(response.context["users"], self.user)
+        self.assertEqual(response.context["follower_count"], 0)
+
+#並び替え　order=old
+    def test_name_order_old(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse('eat:index'),
+            {'order':'old'}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name1>, <Recipe: recipe_name2>, <Recipe: recipe_name3>]"
+            )
+
+#並び替え　order=new
+    def test_name_order_new(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse('eat:index'),
+            {'order':'new'}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name3>, <Recipe: recipe_name2>, <Recipe: recipe_name1>]"
+            )
+
+#検索　serch=ご飯
+    def test_name_search_word(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse('eat:index'),
+            {'search':'ご飯'}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name2>, <Recipe: recipe_name1>]"
+            )
+
+#検索　serch=ご飯, order=new
+    def test_name_search_word_and_order_new(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse('eat:index'),
+            {'order':'new', 'search':'ご飯'}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name2>, <Recipe: recipe_name1>]"
+            )
+
+#検索　serch=ご飯, order=old
+    def test_name_search_word_and_order_old(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse('eat:index'),
+            {'order':'old', 'search':'ご飯'}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name1>, <Recipe: recipe_name2>]"
+            )
+
+#deletes
+    def test_url_deletes(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(reverse('eat:index'))
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name3>, <Recipe: recipe_name2>, <Recipe: recipe_name1>]"
+            )
+        self.assertEqual(response.status_code, 200)
+        delete = "recipe_name2"
+        response = self.client.post("/eat/index/?deletes=deletes", {'delete': 1}, follow=True)
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name3>, <Recipe: recipe_name2>]"
+            )
+
+class TestEatTimeLineListView(TestCase):
+    def setUp(self):
+        client = Client()
+        self.user = User.objects.create_user("sample", "sample@gmail.com", "pass")
+        user2 = User.objects.create_user("sample2", "sample2@gmail.com", "pass2")
+        user3 = User.objects.create_user("sample3", "sample3@gmail.com", "pass3")
+        self.user.follow.add(user2)
+        #self.userのオブジェクト
+        user_recipe1 = Recipe.objects.create(
+            recipe_name="recipe_name1",
+            ingredient="ingredient1",
+            type="ご飯",
+            user=self.user,
+            public="公開"
+            )
+        user_recipe2 = Recipe.objects.create(
+            recipe_name="recipe_name2",
+            ingredient="ingredient2",
+            type="ご飯",
+            user=self.user,
+            public="非公開"
+            )
+        user_recipe3 = Recipe.objects.create(
+            recipe_name="recipe_name3",
+            ingredient="ingredient2",
+            type="ご飯",
+            user=self.user,
+            public="友達のみ"
+            )
+        #フォローしている人の投稿
+        user2_recipe4 = Recipe.objects.create(
+            recipe_name="recipe_name4",
+            ingredient="ingredient4",
+            type="ご飯",
+            user=user2,
+            public="公開"
+            )
+        user2_recipe5 = Recipe.objects.create(
+            recipe_name="recipe_name5",
+            ingredient="ingredient5",
+            type="ご飯",
+            user=user2,
+            public="非公開"
+            )
+        user2_recipe6 = Recipe.objects.create(
+            recipe_name="recipe_name6",
+            ingredient="ingredient6",
+            type="スープ",
+            user=user2,
+            public="友達のみ"
+            )
+        #フォローしていない人の投稿
+        user3_recipe7 = Recipe.objects.create(
+            recipe_name="recipe_name7",
+            ingredient="ingredient7",
+            type="ご飯",
+            user=user3,
+            public="公開"
+            )
+        user3_recipe8 = Recipe.objects.create(
+            recipe_name="recipe_name8",
+            ingredient="ingredient8",
+            type="ご飯",
+            user=user3,
+            public="非公開"
+            )
+        user2_recipe9 = Recipe.objects.create(
+            recipe_name="recipe_name9",
+            ingredient="ingredient9",
+            type="ご飯",
+            user=user3,
+            public="友達のみ"
+            )
+
+#ログインしていない場合
+    def test_name_not_login(self):
+        response = self.client.get(reverse('eat:timeline'), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "login.html")
+
+#検索ワードがない場合
+    def test_url(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get('/eat/timeline/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_timeline_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name6>, <Recipe: recipe_name4>, <Recipe: recipe_name3>, <Recipe: recipe_name1>]"
+            )
+
+#検索ワードがない場合 url
+    def test_url(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get('/eat/timeline/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_timeline_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name6>, <Recipe: recipe_name4>, <Recipe: recipe_name3>, <Recipe: recipe_name1>]"
+            )
+
+#検索ワードがない場合　name
+    def test_name(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(reverse('eat:timeline'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_timeline_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name6>, <Recipe: recipe_name4>, <Recipe: recipe_name3>, <Recipe: recipe_name1>]"
+            )
+
+#並び替え　order=old
+    def test_name_order_old(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse('eat:timeline'),
+            {'order':'old'}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_timeline_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name1>, <Recipe: recipe_name3>, <Recipe: recipe_name4>, <Recipe: recipe_name6>]"
+            )
+
+#並び替え　order=new
+    def test_name_order_new(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse('eat:timeline'),
+            {'order':'new'}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_timeline_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name6>, <Recipe: recipe_name4>, <Recipe: recipe_name3>, <Recipe: recipe_name1>]"
+            )
+
+#検索　serch=ご飯
+    def test_name_search_word(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse('eat:timeline'),
+            {'search':'ご飯'}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_timeline_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name4>, <Recipe: recipe_name3>, <Recipe: recipe_name1>]"
+            )
+
+#検索　serch=ご飯 order=new
+    def test_name_search_word_order_new(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse('eat:timeline'),
+            {'search':'ご飯', "order": "new"}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_timeline_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name4>, <Recipe: recipe_name3>, <Recipe: recipe_name1>]"
+            )
+
+#検索　serch=ご飯 order=old
+    def test_name_search_word_order_old(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse('eat:timeline'),
+            {'search':'ご飯', "order": "old"}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_timeline_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name1>, <Recipe: recipe_name3>, <Recipe: recipe_name4>]"
+            )
+
+class TesEatUsersListView(TestCase):
+    def setUp(self):
+        client = Client()
+        self.user = User.objects.create_user("sample", "sample@gmail.com", "pass")
+        user2 = User.objects.create_user("sample2", "sample2@gmail.com", "pass2")
+        user3 = User.objects.create_user("sample3", "sample3@gmail.com", "pass3")
+        self.user.follow.add(user2)
+        #self.userのオブジェクト
+        user_recipe1 = Recipe.objects.create(
+            recipe_name="recipe_name1",
+            ingredient="ingredient1",
+            type="ご飯",
+            user=self.user,
+            public="公開"
+            )
+        user_recipe2 = Recipe.objects.create(
+            recipe_name="recipe_name2",
+            ingredient="ingredient2",
+            type="ご飯",
+            user=self.user,
+            public="非公開"
+            )
+        user_recipe3 = Recipe.objects.create(
+            recipe_name="recipe_name3",
+            ingredient="ingredient2",
+            type="ご飯",
+            user=self.user,
+            public="友達のみ"
+            )
+        #フォローしている人の投稿
+        user2_recipe4 = Recipe.objects.create(
+            recipe_name="recipe_name4",
+            ingredient="ingredient4",
+            type="ご飯",
+            user=user2,
+            public="公開"
+            )
+        user2_recipe5 = Recipe.objects.create(
+            recipe_name="recipe_name5",
+            ingredient="ingredient5",
+            type="ご飯",
+            user=user2,
+            public="非公開"
+            )
+        user2_recipe6 = Recipe.objects.create(
+            recipe_name="recipe_name6",
+            ingredient="ingredient6",
+            type="スープ",
+            user=user2,
+            public="友達のみ"
+            )
+        #フォローしていない人の投稿
+        user3_recipe7 = Recipe.objects.create(
+            recipe_name="recipe_name7",
+            ingredient="ingredient7",
+            type="ご飯",
+            user=user3,
+            public="公開"
+            )
+        user3_recipe8 = Recipe.objects.create(
+            recipe_name="recipe_name8",
+            ingredient="ingredient8",
+            type="ご飯",
+            user=user3,
+            public="非公開"
+            )
+        user2_recipe9 = Recipe.objects.create(
+            recipe_name="recipe_name9",
+            ingredient="ingredient9",
+            type="ご飯",
+            user=user3,
+            public="友達のみ"
+            )
+        user2_recipe10 = Recipe.objects.create(
+            recipe_name="recipe_name10",
+            ingredient="ingredient10",
+            type="ご飯",
+            user=user3,
+            public="公開"
+            )
+        user2_recipe11 = Recipe.objects.create(
+            recipe_name="recipe_name11",
+            ingredient="ingredient11",
+            type="スープ",
+            user=user3,
+            public="公開"
+            )
+
+#検索ワードがない場合 フォローしているユーザー
+    def test_url_follow_user2(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get('/eat/users/2', follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name6>, <Recipe: recipe_name4>]"
+            )
+        self.assertEqual(response.context["recipe_count"], 3)
+        self.assertEqual(str(response.context["users"]), "sample2")
+        self.assertEqual(response.context["follower_count"], 1)
+
+#検索ワードがない場合 フォローしているユーザー
+    def test_name_follow_user2(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse("eat:users", kwargs={'users_id': 2}),
+            follow=True
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name6>, <Recipe: recipe_name4>]"
+            )
+        self.assertEqual(response.context["recipe_count"], 3)
+        self.assertEqual(str(response.context["users"]), "sample2")
+        self.assertEqual(response.context["follower_count"], 1)
+
+#並び替え　order=old フォローしているユーザー
+    def test_name_follow_user2_order_old(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse("eat:users", kwargs={'users_id': 2}),
+            {'order':'old'}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name4>, <Recipe: recipe_name6>]"
+            )
+
+#並び替え　order=old フォローしているユーザー
+    def test_name_follow_user2_order_new(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse("eat:users", kwargs={'users_id': 2}),
+            {'order':'new'}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name6>, <Recipe: recipe_name4>]"
+            )
+
+#検索ワードがない場合 フォローしていないユーザー
+    def test_name_follow_user3(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse("eat:users", kwargs={'users_id': 3}),
+            follow=True
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name11>, <Recipe: recipe_name10>, <Recipe: recipe_name7>]"
+            )
+        self.assertEqual(response.context["recipe_count"], 5)
+        self.assertEqual(str(response.context["users"]), "sample3")
+        self.assertEqual(response.context["follower_count"], 0)
+
+#検索ワード フォローしていないユーザー
+    def test_name_follow_user3_serch(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse("eat:users", kwargs={'users_id': 3}),
+            {"search": "ご飯"},
+            follow=True
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name10>, <Recipe: recipe_name7>]"
+            )
+
+#検索ワード order=new フォローしていないユーザー
+    def test_name_follow_user3_serch_order_new(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse("eat:users", kwargs={'users_id': 3}),
+            {"search": "ご飯", "order":"new"},
+            follow=True
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name10>, <Recipe: recipe_name7>]"
+            )
+
+#検索ワード order=new フォローしていないユーザー
+    def test_name_follow_user3_serch_order_old(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse("eat:users", kwargs={'users_id': 3}),
+            {"search": "ご飯", "order":"old"},
+            follow=True
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name7>, <Recipe: recipe_name10>]"
+            )
+
+    def test_name_my_page(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse("eat:users", kwargs={'users_id': 1}),
+            follow=True
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name3>, <Recipe: recipe_name2>, <Recipe: recipe_name1>]"
+            )
+        self.assertEqual(response.context["recipe_count"], 3)
+        self.assertEqual(response.context["users"], self.user)
+        self.assertEqual(response.context["follower_count"], 0)
+
+
+    def test_name_not_login(self):
+        response = self.client.get(
+            reverse("eat:users", kwargs={'users_id': 1}),
+            follow=True
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name1>]"
+            )
+
+class TestEatFindListView(TestCase):
+    def setUp(self):
+        client = Client()
+        self.user = User.objects.create_user("sample", "sample@gmail.com", "pass")
+        user2 = User.objects.create_user("sample2", "sample2@gmail.com", "pass2")
+        user3 = User.objects.create_user("sample3", "sample3@gmail.com", "pass3")
+        self.user.follow.add(user2)
+        #self.userのオブジェクト
+        user_recipe1 = Recipe.objects.create(
+            recipe_name="recipe_name1",
+            ingredient="ingredient1",
+            type="ご飯",
+            user=self.user,
+            public="公開"
+            )
+        user_recipe2 = Recipe.objects.create(
+            recipe_name="recipe_name2",
+            ingredient="ingredient2",
+            type="ご飯",
+            user=self.user,
+            public="非公開"
+            )
+        user_recipe3 = Recipe.objects.create(
+            recipe_name="recipe_name3",
+            ingredient="ingredient2",
+            type="ご飯",
+            user=self.user,
+            public="友達のみ"
+            )
+        #フォローしている人の投稿
+        user2_recipe4 = Recipe.objects.create(
+            recipe_name="recipe_name4",
+            ingredient="ingredient4",
+            type="ご飯",
+            user=user2,
+            public="公開"
+            )
+        user2_recipe5 = Recipe.objects.create(
+            recipe_name="recipe_name5",
+            ingredient="ingredient5",
+            type="ご飯",
+            user=user2,
+            public="非公開"
+            )
+        user2_recipe6 = Recipe.objects.create(
+            recipe_name="recipe_name6",
+            ingredient="ingredient6",
+            type="スープ",
+            user=user2,
+            public="友達のみ"
+            )
+        #フォローしていない人の投稿
+        user3_recipe7 = Recipe.objects.create(
+            recipe_name="recipe_name7",
+            ingredient="ingredient7",
+            type="ご飯",
+            user=user3,
+            public="公開"
+            )
+        user3_recipe8 = Recipe.objects.create(
+            recipe_name="recipe_name8",
+            ingredient="ingredient8",
+            type="ご飯",
+            user=user3,
+            public="非公開"
+            )
+        user2_recipe9 = Recipe.objects.create(
+            recipe_name="recipe_name9",
+            ingredient="ingredient9",
+            type="ご飯",
+            user=user3,
+            public="友達のみ"
+            )
+        user2_recipe10 = Recipe.objects.create(
+            recipe_name="recipe_name10",
+            ingredient="ingredient10",
+            type="ご飯",
+            user=user3,
+            public="公開"
+            )
+        user2_recipe11 = Recipe.objects.create(
+            recipe_name="recipe_name11",
+            ingredient="ingredient11",
+            type="スープ",
+            user=user3,
+            public="公開"
+            )
+#検索ワード無し　name
+    def test_name(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(reverse("eat:find"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_find_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name11>, <Recipe: recipe_name10>, <Recipe: recipe_name7>, <Recipe: recipe_name6>, <Recipe: recipe_name4>, <Recipe: recipe_name3>, <Recipe: recipe_name2>, <Recipe: recipe_name1>]"
+            )
 
     def test_url(self):
         self.client.login(username="sample", password="pass")
-        response = self.client.get("/eat/detail/1/")
+        response = self.client.get("/eat/find/")
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_detail.html")
+        self.assertTemplateUsed(response, "eat/recipe_find_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name11>, <Recipe: recipe_name10>, <Recipe: recipe_name7>, <Recipe: recipe_name6>, <Recipe: recipe_name4>, <Recipe: recipe_name3>, <Recipe: recipe_name2>, <Recipe: recipe_name1>]"
+            )
 
-    def test_name(self):
+#order=new
+    def test_name_new(self):
         self.client.login(username="sample", password="pass")
-        response = self.client.get(reverse("eat:detail", kwargs={'pk': 1}))
+        response = self.client.get(
+            reverse("eat:find"),
+            {"order": "new"}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_find_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name11>, <Recipe: recipe_name10>, <Recipe: recipe_name7>, <Recipe: recipe_name6>, <Recipe: recipe_name4>, <Recipe: recipe_name3>, <Recipe: recipe_name2>, <Recipe: recipe_name1>]"
+            )
+
+#order=old
+    def test_name_old(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse("eat:find"),
+            {"order": "old"}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_find_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name1>, <Recipe: recipe_name2>, <Recipe: recipe_name3>, <Recipe: recipe_name4>, <Recipe: recipe_name6>, <Recipe: recipe_name7>, <Recipe: recipe_name10>, <Recipe: recipe_name11>]"
+            )
+
+#search
+    def test_name_search(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse("eat:find"),
+            {"search": "ご飯"}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_find_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name10>, <Recipe: recipe_name7>, <Recipe: recipe_name4>, <Recipe: recipe_name3>, <Recipe: recipe_name2>, <Recipe: recipe_name1>]"
+            )
+
+#search order=new
+    def test_name_search_oeder_new(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse("eat:find"),
+            {"search": "ご飯", "order": "new"}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_find_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name10>, <Recipe: recipe_name7>, <Recipe: recipe_name4>, <Recipe: recipe_name3>, <Recipe: recipe_name2>, <Recipe: recipe_name1>]"
+            )
+
+#search order=old
+    def test_name_search_oeder_old(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse("eat:find"),
+            {"search": "ご飯", "order": "old"}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_find_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name1>, <Recipe: recipe_name2>, <Recipe: recipe_name3>, <Recipe: recipe_name4>, <Recipe: recipe_name7>, <Recipe: recipe_name10>]"
+            )
+
+#ログインしていないとき
+    def test_not_login(self):
+        response = self.client.get(reverse("eat:find"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_find_list.html")
+        self.assertEqual(
+            str(list(response.context["object_list"])),
+            "[<Recipe: recipe_name11>, <Recipe: recipe_name10>, <Recipe: recipe_name7>, <Recipe: recipe_name4>, <Recipe: recipe_name1>]"
+            )
+
+class TestEatDetailView(TestCase):
+
+    def setUp(self):
+        client = Client()
+        self.user = User.objects.create_user("sample", "sample@gmail.com", "pass")
+        user2 = User.objects.create_user("sample2", "sample2@gmail.com", "pass2")
+        self.user.follow.add(user2)
+        user_recipe1 = Recipe.objects.create(
+            recipe_name="recipe_name1",
+            ingredient="ingredient1",
+            type="ご飯",
+            user=self.user,
+            public="公開"
+            )
+        user_recipe2 = Recipe.objects.create(
+            recipe_name="recipe_name2",
+            ingredient="ingredient2",
+            type="ご飯",
+            user=user2,
+            public="公開",
+            quote_recipe=user_recipe1
+            )
+
+#quote_recipe 有り　name
+    def test_name(self):
+        response = self.client.get(reverse("eat:detail", kwargs={'pk':1}))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "eat/recipe_detail.html")
-        self.assertEqual(str(response.context["user"]), "sample")
-        self.assertContains(response, "sample_recipe_name")
-        self.assertContains(response, "sample.url")
-        self.assertContains(response, "sample_memo")
-        self.assertContains(response, "sample.img")
-        self.assertContains(response, "sample_ingredient")
-        self.assertContains(response, "ご飯")
-        self.assertContains(response, self.user)
+        self.assertEqual(str(list(response.context["object_list"])), '[<Recipe: recipe_name2>]')
 
-    def test_url_not_login(self):
+#quote_recipe 有り　url
+    def test_url(self):
         response = self.client.get("/eat/detail/1/")
-        self.assertEqual(response.status_code, 403)
+        self.assertTemplateUsed(response, "eat/recipe_detail.html")
+        self.assertEqual(str(list(response.context["object_list"])), '[<Recipe: recipe_name2>]')
+
+#quote_recipe 無し name
+    def test_url_none_quote_recipe(self):
+        response = self.client.get(reverse("eat:detail", kwargs={'pk':2}))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_detail.html")
+        self.assertEqual(str(list(response.context["object_list"])), '[]')
+
+class TestEatQuoteDetailView(TestCase):
+    def setUp(self):
+        client = Client()
+        self.user = User.objects.create_user("sample", "sample@gmail.com", "pass")
+        user2 = User.objects.create_user("sample2", "sample2@gmail.com", "pass2")
+        self.user.follow.add(user2)
+        user_recipe1 = Recipe.objects.create(
+            recipe_name="recipe_name1",
+            ingredient="ingredient1",
+            type="ご飯",
+            user=self.user,
+            public="公開"
+            )
+        user_recipe2 = Recipe.objects.create(
+            recipe_name="recipe_name2",
+            ingredient="ingredient2",
+            type="ご飯",
+            user=user2,
+            public="公開",
+            quote_recipe=user_recipe1,
+            quote="有り"
+            )
+        user_recipe3 = Recipe.objects.create(
+            recipe_name="recipe_name3",
+            ingredient="ingredient3",
+            type="ご飯",
+            user=user2,
+            public="公開",
+            )
+        user_recipe3.quote_user.add(self.user)
+
+#作成者とログインユーザーが一致しない場合 作成ページへ移動
+    def test_name(self):
+        #ユーザー２でログイン
+        self.client.login(username="sample2", password="pass2")
+        recipe = Recipe.objects.get(id=1)
+        self.assertEqual(str(list(recipe.quote_user.all())), "[]")
+        response = self.client.get(reverse("eat:quote_detail", kwargs={'pk': 1}))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/quote_recipe.html")
+        self.assertEqual(str(list(recipe.quote_user.all())), "[]")
+        self.assertEqual(str(response.context["object"]), 'recipe_name1')
+
+#作成者とログインユーザーが一致しない場合 作成ページへ移動
+    def test_url(self):
+        #ユーザー２でログイン
+        self.client.login(username="sample2", password="pass2")
+        recipe = Recipe.objects.get(id=1)
+        self.assertEqual(str(list(recipe.quote_user.all())), "[]")
+        response = self.client.get("/eat/detail/quote/1/")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/quote_recipe.html")
+        self.assertEqual(str(list(recipe.quote_user.all())), "[]")
+        self.assertEqual(str(response.context["object"]), 'recipe_name1')
+
+    def test_name_quote(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse('eat:quote_detail', kwargs={'pk': 2}),
+            HTTP_REFERER=str(reverse('signup:top')),
+            follow=True
+            )
+        messages = list(response.context["messages"])
+        self.assertEqual(str(messages[0]), "参考cookに参考cookは作成できません")
+
+    def test_name_quote_user(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(
+            reverse('eat:quote_detail', kwargs={'pk': 3}),
+            HTTP_REFERER=str(reverse('signup:top')),
+            follow=True
+            )
+        msg = """このレシピの参考cookは作成済みです。レシピは<a href='/eat/delete/3/'> こちら </a>から削除できます"""
+        messages = list(response.context["messages"])
+        self.assertEqual(str(messages[0]), msg)
+
+    def test_name_create_user_equal_login_user(self):
+        self.client.login(username="sample", password="pass")
+        response = self.client.get(reverse("eat:quote_detail", kwargs={'pk': 1}), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "signup/top.html")
 
     def test_name_not_login(self):
-        response = self.client.get(reverse("eat:detail", kwargs={'pk':1}))
-        self.assertEqual(response.status_code, 403)
-
-
+        response = self.client.get(reverse("eat:quote_detail", kwargs={'pk': 1}), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "login.html")
 
 class TestEatCreateView(TestCase):
     def setUp(self):
         client = Client()
         self.user = User.objects.create_user("sample", "sample@gmail.com", "pass")
 
-    def test_url_post_data(self):
+    def test_name(self):
         self.client.login(username="sample", password="pass")
         data = {
-            "recipe_name": "sample_recipe_name",
-            "site": "sample.url",
-            "memo": "sample_memo",
-            "photo": 'img/smIMGL3647_TP_V.jpg',
-            "ingredient": "sample_ingredient",
+            "recipe_name": "recipe_name",
+            "ingredient": "ingredient",
             "type": "スープ",
-            }
-        response = self.client.post("/eat/create/", data=data)
-        self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('eat:index'))
-
-
-    def test_name_post_data(self):
-        self.client.login(username="sample", password="pass")
-        data = {
-            "recipe_name": "sample_recipe_name",
-            "site": "sample.url",
-            "memo": "sample_memo",
-            "photo": 'sample.img',
-            "ingredient": "sample_ingredient",
-            "type": "スープ",
+            "user": self.user,
+            "public": "公開"
             }
         response = self.client.post(reverse('eat:create'), data=data)
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse('eat:index'))
 
+
+    def test_url(self):
+        self.client.login(username="sample", password="pass")
+        data = {
+            "recipe_name": "recipe_name",
+            "ingredient": "ingredient",
+            "type": "スープ",
+            "user": self.user,
+            "public": "公開"
+            }
+        response = self.client.post("/eat/create/", data=data)
+        self.assertEqual(response.status_code, 302)
+
     def test_name_success_messages(self):
         self.client.login(username="sample", password="pass")
         data = {
-            "recipe_name": "sample_recipe_name",
-            "site": "sample.url",
-            "memo": "sample_memo",
-            "photo": 'sample.img',
-            "ingredient": "sample_ingredient",
+            "recipe_name": "recipe_name",
+            "ingredient": "ingredient",
             "type": "スープ",
+            "user": self.user,
+            "public": "公開"
             }
         response = self.client.post(reverse('eat:create'), data=data, follow=True)
         self.assertEqual(response.status_code, 200)
@@ -1120,264 +1264,294 @@ class TestEatCreateView(TestCase):
         messages = list(response.context["messages"])
         self.assertEqual(str(messages[0]), "保存しました")
 
-    def test_name_get_data(self):
-        self.client.login(username="sample", password="pass")
-        data = {
-            "recipe_name": "sample_recipe_name",
-            "site": "sample.url",
-            "memo": "sample_memo",
-            "photo": 'sample.img',
-            "ingredient": "sample_ingredient",
-            "type": "スープ",
-            }
-        response = self.client.get(reverse('eat:create'), data=data)
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_create_form.html")
-
-    def test_name_post_none_data(self):
-        self.client.login(username="sample", password="pass")
-        data = {}
-        response = self.client.post(reverse('eat:create'), data=data)
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_create_form.html")
-        self.assertFormError(response, 'form', 'recipe_name', 'このフィールドは必須です。')
-        self.assertFormError(response, 'form', 'ingredient', 'このフィールドは必須です。')
-        self.assertFormError(response, 'form', 'type', 'このフィールドは必須です。')
-
     def test_name_error_messages(self):
         self.client.login(username="sample", password="pass")
-        data = {}
+        data = {
+            "recipe_name": "recipe_name",
+            "ingredient": "",
+            "type": "スープ",
+            "user": self.user,
+            "public": "公開"
+            }
         response = self.client.post(reverse('eat:create'), data=data)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "eat/recipe_create_form.html")
         messages = list(response.context["messages"])
         self.assertEqual(str(messages[0]), "保存に失敗しました")
 
+class TestEatQuoteCreateView(TestCase):
+    def setUp(self):
+        client = Client()
+        self.user = User.objects.create_user("sample", "sample@gmail.com", "pass")
+        user2 = User.objects.create_user("sample2", "sample2@gmail.com", "pass2")
+        self.user.follow.add(user2)
+        user1_recipe1 = Recipe.objects.create(
+            recipe_name="recipe_name1",
+            ingredient="ingredient1",
+            type="ご飯",
+            user=self.user,
+            public="公開"
+            )
+        user1_recipe2 = Recipe.objects.create(
+            recipe_name="recipe_name2",
+            ingredient="ingredient2",
+            type="ご飯",
+            user=self.user,
+            public="公開"
+            )
+        #user2のuser_recipe2に対する参考cook
+        user2_recipe3 = Recipe.objects.create(
+            recipe_name="recipe_name3",
+            ingredient="ingredient3",
+            type="ご飯",
+            user=user2,
+            quote_recipe=user1_recipe2,
+            quote="有り",
+            public="公開",
+            )
+        user1_recipe2.quote_user.add(user2)
 
-    def test_name_post_required(self):
-        self.client.login(username="sample", password="pass")
+
+    def test_url(self):
+        self.client.login(username="sample2", password="pass2")
+        user2 = User.objects.get(id=2)
         data = {
-            "recipe_name": "sample_recipe_name",
-            "memo": "sample_memo",
-            "ingredient": "sample_ingredient",
+            "recipe_name": "recipe_name",
+            "ingredient": "ingredient",
             "type": "スープ",
+            "user": user2,
+            "public": "公開"
             }
-        response = self.client.post(reverse('eat:create'), data=data)
-        self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('eat:index'))
-
-
-    def test_name_post_none_required(self):
-        self.client.login(username="sample", password="pass")
-        data = {
-            "ingredient": "sample_ingredient",
-            "type": "スープ",
-            }
-        response = self.client.post(reverse('eat:create'), data=data)
+        response = self.client.post("/eat/create/quote/1/", data=data, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_create_form.html")
-        self.assertContains(response, 'errorlist')
-        self.assertFormError(response, 'form', 'recipe_name', 'このフィールドは必須です。')
-        self.assertEqual(str(response.context['user']), 'sample')
-        #投稿できなかった時の初期値のテスト　Bound=False でcontextは使えない？
-        self.assertContains(response, "sample_ingredient")
-        self.assertContains(response, "スープ")
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
 
+    def test_name(self):
+        self.client.login(username="sample2", password="pass2")
+        user2 = User.objects.get(id=2)
+        data = {
+            "recipe_name": "recipe_name",
+            "ingredient": "ingredient",
+            "type": "スープ",
+            "user": user2,
+            "public": "公開"
+            }
+        response = self.client.post(
+            reverse("eat:quote_create", kwargs={"pk": 1}),
+            data=data,
+            follow=True
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
 
-    def test_url_not_login(self):
-        response = self.client.post("/eat/create/")
-        self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, '/signup/login/?next=/eat/create/')
+    def test_name_create_recipe(self):
+        print("test2")
+        self.client.login(username="sample2", password="pass2")
+        user2 = User.objects.get(id=2)
+        recipe = Recipe.objects.get(id=1)
+        self.assertEqual(str(list(recipe.quote_user.all())), "[]")
+        data = {
+            "recipe_name": "recipe_name",
+            "ingredient": "ingredient",
+            "type": "スープ",
+            "user": user2,
+            "public": "公開"
+            }
+        response = self.client.post(
+            reverse("eat:quote_create", kwargs={"pk": 1}),
+            data=data,
+            follow=True
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "eat/recipe_list.html")
+        self.assertEqual(str(list(recipe.quote_user.all())), "[<User: sample2>]")
+        create_recipe = Recipe.objects.get(id=4)
+        self.assertEqual(create_recipe.quote, "有り")
+        messages = list(response.context["messages"])
+        self.assertEqual(str(messages[0]), "参考cookを作成しました")
 
+#すでに参考クックを投稿している場合
+    def test_name_created_recipe(self):
+        self.client.login(username="sample2", password="pass2")
+        user2 = User.objects.get(id=2)
+        data = {
+            "recipe_name": "recipe_name",
+            "ingredient": "ingredient",
+            "type": "スープ",
+            "user": user2,
+            "public": "公開"
+            }
+        response = self.client.post(
+            reverse("eat:quote_create", kwargs={"pk": 2}),
+            data=data,
+            HTTP_REFERER=str(reverse('signup:top')),
+            follow=True
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'signup/top.html')
+        messages = list(response.context["messages"])
+        self.assertEqual(str(messages[0]), "すでに参考cookを作成しています")
 
-    def test_url_not_login(self):
-        response = self.client.post(reverse("eat:create"))
-        self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, '/signup/login/?next=/eat/create/')
+##投稿が参考cookの場合
+    def test_name_quote(self):
+        self.client.login(username="sample", password="pass")
+        data = {
+            "recipe_name": "recipe_name",
+            "ingredient": "ingredient",
+            "type": "スープ",
+            "user": self.user,
+            "public": "公開"
+            }
+        response = self.client.post(
+            reverse("eat:quote_create", kwargs={"pk": 3}),
+            data=data,
+            HTTP_REFERER=str(reverse('signup:top')),
+            follow=True
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'signup/top.html')
+        messages = list(response.context["messages"])
+        self.assertEqual(str(messages[0]), "参考cookに参考cookは作成できません")
 
+#投稿者とログインユーザーが一緒の場合
+    def test_name_create_my_quote_recipe(self):
+        self.client.login(username="sample", password="pass")
+        data = {
+            "recipe_name": "recipe_name",
+            "ingredient": "ingredient",
+            "type": "スープ",
+            "user": self.user,
+            "public": "公開"
+            }
+        response = self.client.post(
+            reverse("eat:quote_create", kwargs={"pk": 1}),
+            data=data,
+            HTTP_REFERER=str(reverse('signup:top')),
+            follow=True
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'signup/top.html')
+        messages = list(response.context["messages"])
+        self.assertEqual(str(messages[0]), "自分の投稿に参考cookは作成できません")
 
+    def test_not_login(self):
+        response = self.client.post(
+            reverse("eat:quote_create", kwargs={"pk": 1}),
+            follow=True
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "login.html")
 
 class TestEatUpdateView(TestCase):
     def setUp(self):
         client = Client()
         self.user = User.objects.create_user("sample", "sample@gmail.com", "pass")
-        recipe = Recipe.objects.create(
-            recipe_name="sample_recipe_name",
-            site="sample.url",
-            memo="sample_memo",
-            photo="sample.img",
-            ingredient="sample_ingredient",
+        user1_recipe1 = Recipe.objects.create(
+            recipe_name="recipe_name1",
+            ingredient="ingredient1",
             type="ご飯",
+            user=self.user,
+            public="公開"
             )
-
-    def test_url_none_object(self):
-        self.client.login(username="sample", password="pass")
-        response = self.client.get("/eat/update/2/")
-        self.assertEqual(response.status_code, 404)
-
-    def test_name_none_object(self):
-        self.client.login(username="sample", password="pass")
-        response = self.client.get(reverse('eat:update', kwargs={'pk': 2}),)
-        self.assertEqual(response.status_code, 404)
 
     def test_url(self):
         self.client.login(username="sample", password="pass")
-        response = self.client.get("/eat/update/1/")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_update_form.html")
-
-    def test_name(self):
-        self.client.login(username="sample", password="pass")
-        response = self.client.get(reverse("eat:update", kwargs={'pk':1}))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_update_form.html")
-        self.assertEqual(str(response.context["user"]), "sample")
-        self.assertEqual(response.context['form'].initial['recipe_name'], 'sample_recipe_name')
-        self.assertEqual(response.context['form'].initial['site'], 'sample.url')
-        self.assertEqual(response.context['form'].initial['memo'], 'sample_memo')
-        self.assertEqual(response.context['form'].initial['photo'], 'sample.img')
-        self.assertEqual(response.context['form'].initial['ingredient'], 'sample_ingredient')
-        self.assertEqual(response.context['form'].initial['type'], 'ご飯')
-
-
-    def test_name_update_post(self):
-        self.client.login(username="sample", password="pass")
         data = {
-            "recipe_name": "sample_recipe_name",
-            "site": "sample.url",
-            "memo": "sample_memo",
-            "photo": 'sample.img',
-            "ingredient": "sample_ingredient",
+            "recipe_name": "recipe_name1",
+            "ingredient": "ingredient1",
             "type": "スープ",
+            "user": self.user,
+            "public": "公開"
             }
-        response = self.client.post(reverse("eat:update", kwargs={'pk':1}), data=data)
-        self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse('eat:detail', kwargs={"pk":1}))
+        response = self.client.get("/eat/update/1/", data=data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'eat/recipe_update_form.html')
+
 
     def test_name_success_messages(self):
         self.client.login(username="sample", password="pass")
         data = {
-            "recipe_name": "sample_recipe_name",
-            "site": "sample.url",
-            "memo": "sample_memo",
-            "photo": 'sample.img',
-            "ingredient": "sample_ingredient",
+            "recipe_name": "recipe_name1",
+            "ingredient": "ingredient1",
             "type": "スープ",
+            "user": self.user,
+            "public": "公開"
             }
-        response = self.client.post(reverse("eat:update", kwargs={'pk':1}), data=data, follow=True)
+        response = self.client.post(
+            reverse("eat:update", kwargs={'pk':1}),
+            data=data,
+            follow=True
+            )
         self.assertEqual(response.status_code, 200)
         self.assertRedirects(response, reverse('eat:detail', kwargs={"pk":1}))
         messages = list(response.context["messages"])
         self.assertEqual(str(messages[0]), "投稿を上書きしました")
 
-    def test_name_update_get(self):
-        self.client.login(username="sample", password="pass")
-        data = {
-            "recipe_name": "sample_recipe_name",
-            "site": "sample.url",
-            "memo": "sample_memo",
-            "photo": 'sample.img',
-            "ingredient": "sample_ingredient",
-            "type": "スープ",
-            }
-        response = self.client.get(reverse("eat:update", kwargs={'pk':1}), data=data)
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_update_form.html")
-
-    def test_name_update_post_none_required(self):
-        self.client.login(username="sample", password="pass")
-        data = {
-            "ingredient": "sample_ingredient",
-            "type": "スープ",
-            }
-        response = self.client.post(reverse("eat:update", kwargs={'pk':1}), data=data)
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_update_form.html")
-        self.assertContains(response, 'errorlist')
-        self.assertFormError(response, 'form', 'recipe_name', 'このフィールドは必須です。')
-        self.assertEqual(str(response.context['user']), 'sample')
-        self.assertContains(response, "sample_ingredient")
-        self.assertContains(response, "スープ")
-
     def test_name_error_messages(self):
         self.client.login(username="sample", password="pass")
         data = {
-            "ingredient": "sample_ingredient",
-            "type": "スープ",
+            "recipe_name": "recipe_name1",
+            "ingredient": "ingredient1",
+            "user": self.user,
+            "public": "公開"
             }
-        response = self.client.post(reverse("eat:update", kwargs={'pk':1}), data=data)
+        response = self.client.post(
+            reverse("eat:update", kwargs={'pk':1}),
+            data=data,
+            follow=True
+            )
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "eat/recipe_update_form.html")
         messages = list(response.context["messages"])
         self.assertEqual(str(messages[0]), "保存に失敗しました")
 
-
-    def test_url_not_login(self):
-        response = self.client.get("/eat/update/1/")
-        self.assertEqual(response.status_code, 403)
-
-    def test_name_not_login(self):
-        response = self.client.get(reverse("eat:update", kwargs={'pk':1}))
-        self.assertEqual(response.status_code, 403)
-
-
-
 class TestEatDeleteView(TestCase):
     def setUp(self):
         client = Client()
         self.user = User.objects.create_user("sample", "sample@gmail.com", "pass")
-        recipe = Recipe.objects.create(
-            recipe_name="sample_recipe_name",
-            site="sample.url",
-            memo="sample_memo",
-            photo="sample.img",
-            ingredient="sample_ingredient",
-            type="ご飯",)
+        user1_recipe1 = Recipe.objects.create(
+            recipe_name="recipe_name1",
+            ingredient="ingredient1",
+            type="ご飯",
+            user=self.user,
+            public="公開"
+            )
+        user2_recipe2 = Recipe.objects.create(
+            recipe_name="recipe_name1",
+            ingredient="ingredient1",
+            type="ご飯",
+            user=self.user,
+            public="公開"
+            )
+        user1_recipe3 = Recipe.objects.create(
+            recipe_name="recipe_name1",
+            ingredient="ingredient1",
+            type="ご飯",
+            user=self.user,
+            public="公開",
+            quote="有り",
+            quote_recipe=user2_recipe2,
+            )
+        user2_recipe2.quote_user.add(self.user)
 
-    def test_url_none_object(self):
-        self.client.login(username="sample", password="pass")
-        response = self.client.get("/eat/delete/2/")
-        self.assertEqual(response.status_code, 404)
 
-    def test_name_none_object(self):
+    def test_url(self):
         self.client.login(username="sample", password="pass")
-        response = self.client.get(reverse('eat:delete', kwargs={'pk': 2}),)
-        self.assertEqual(response.status_code, 404)
-
-    def test_url_get(self):
-        self.client.login(username="sample", password="pass")
-        response = self.client.get("/eat/delete/1/")
+        response = self.client.post("/eat/delete/1/", follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_delete.html")
-
-    def test_name_get(self):
-        self.client.login(username="sample", password="pass")
-        response = self.client.get(reverse("eat:delete", kwargs={'pk':1}))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "eat/recipe_delete.html")
-        self.assertEqual(str(response.context["user"]), "sample")
-
-    def test_name_post_delete(self):
-        self.client.login(username="sample", password="pass")
-        response = self.client.post(reverse("eat:delete", kwargs={'pk':1}))
-        self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse("eat:index"))
-        response = self.client.get(reverse('eat:delete', kwargs={'pk':1}))
-        self.assertEqual(response.status_code, 404)
-
-    def test_name_success_messages(self):
-        self.client.login(username="sample", password="pass")
-        response = self.client.post(reverse("eat:delete", kwargs={'pk':1}), follow=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertRedirects(response, reverse("eat:index"))
         messages = list(response.context["messages"])
         self.assertEqual(str(messages[0]), "消去しました")
 
-
-    def test_url_not_login(self):
-        response = self.client.get("/eat/delete/1/")
-        self.assertEqual(response.status_code, 403)
-
-    def test_name_not_login(self):
-        response = self.client.get(reverse("eat:delete", kwargs={'pk':1}))
-        self.assertEqual(response.status_code, 403)
+    def test_name(self):
+        self.client.login(username="sample", password="pass")
+        recipe_quote = Recipe.objects.get(id=2)
+        self.assertEqual(str(list(recipe_quote.quote_user.all())), "[<User: sample>]")
+        response = self.client.post(
+            reverse("eat:delete", kwargs={"pk": 3}),
+            follow=True
+            )
+        recipe_quote = Recipe.objects.get(id=2)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(str(list(recipe_quote.quote_user.all())), "[]")
+        messages = list(response.context["messages"])
+        self.assertEqual(str(messages[0]), "消去しました")

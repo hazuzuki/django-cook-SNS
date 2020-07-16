@@ -14,6 +14,7 @@ from django.db.models import Q
 from signup.models import User
 from eat.models import Recipe
 from eat.forms import RecipeForm
+from itertools import chain
 
 
 
@@ -56,48 +57,43 @@ class EatGoodUsersListView(ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        q_word = self.request.GET.get("search")
-        s_word = self.request.GET.get("order")
+        search = self.request.GET.get("search")
+        order = self.request.GET.get("order")
         users_id = self.kwargs.get('users_id')
         users = User.objects.get(id=users_id)
 
-        filter_object = Recipe.objects.filter(good_user=users_id)
-        print(filter_object)
-        if q_word:
-            filter_object = Recipe.objects.filter(
-                Q(good_user=users_id),
-                Q(recipe_name__contains=q_word)|
-                Q(ingredient__contains=q_word)|
-                Q(type__contains=q_word)
-                )
-            if s_word == "new":
-                object_list = filter_object.order_by("-date")
-            elif s_word == "old":
-                object_list = filter_object
-            else:
-                object_list = filter_object.order_by("-date")
-        elif s_word == "old":
-            object_list = filter_object
-        else:
-            object_list = filter_object.order_by("-date")
-        print(object_list)
+        object_list = Recipe.objects.filter(good_user=users_id)
+        #ログイン中
         if self.request.user.is_authenticated:
-            #ユーザーをフォローしている時
-            if users in self.request.user.follow.all():
-                object_list = object_list.exclude(public="非公開")
-            #フォローしていない時
-            else:
-                object_list = filter_object.exclude(
-                    Q(public="非公開")|
-                    Q(public="友達のみ")
-                    )
-                print("b")
+            #フォローしているユーザーの友達のみ公開の投稿を絞り込む
+            object_list = object_list.filter(
+                Q(user__in=self.request.user.follow.all(), public="友達のみ")|
+                Q(public="公開")
+                )
         #ログアウト中
         else:
-            object_list = filter_object.exclude(
+            object_list = object_list.exclude(
                 Q(public="非公開")|
                 Q(public="友達のみ")
                 )
+
+        if search:
+            object_list = object_list.filter(
+                Q(good_user=users_id),
+                Q(recipe_name__contains=search)|
+                Q(ingredient__contains=search)|
+                Q(type__contains=search)
+                )
+            if order == "new":
+                object_list = object_list.order_by("-date")
+            elif order == "old":
+                object_list = object_list.order_by("date")
+            else:
+                object_list = object_list.order_by("-date")
+        elif order == "old":
+            object_list = object_list.order_by("date")
+        else:
+            object_list = object_list.order_by("-date")
         return object_list
 
     def get_context_data(self, **kwargs):
@@ -118,31 +114,29 @@ class EatListView(LoginRequiredMixin, ListView):
     login_url = "/signup/login/"
 
     def get_queryset(self):
-        q_word = self.request.GET.get("search")
-        s_word = self.request.GET.get("order")
+        search = self.request.GET.get("search")
+        order = self.request.GET.get("order")
 
         if self.request.user.is_authenticated:
             filter_object = Recipe.objects.filter(user=self.request.user)
-            if q_word:
+            if search:
                 filter_object = Recipe.objects.filter(
                     Q(user=self.request.user),
-                    Q(recipe_name__contains=q_word)|
-                    Q(ingredient__contains=q_word)|
-                    Q(type__contains=q_word)
+                    Q(recipe_name__contains=search)|
+                    Q(ingredient__contains=search)|
+                    Q(type__contains=search)
                     )
-                if s_word == "new":
+                if order == "new":
                     object_list = filter_object.order_by("-date")
-                elif s_word == "old":
+                elif order == "old":
                     object_list = filter_object
                 else:
                     object_list = filter_object.order_by("-date")
-            elif s_word == "old":
+            elif order == "old":
                 object_list = filter_object
             else:
                 object_list = filter_object.order_by("-date")
             return object_list
-        else:
-            return reverse_lazy("signup:login")
 
     def get_context_data(self, **kwargs):
         if self.request.user.is_authenticated:
@@ -168,48 +162,45 @@ class EatListView(LoginRequiredMixin, ListView):
 
 
 
-class EatTimeLineListView(ListView):
+class EatTimeLineListView(LoginRequiredMixin, ListView):
     model = Recipe
-    paginate_by = 5
+    paginate_by = 20
     login_url = "/signup/login/"
     template_name = "eat/recipe_timeline_list.html"
 
     def get_queryset(self):
-        q_word = self.request.GET.get("search")
-        s_word = self.request.GET.get("order")
+        search = self.request.GET.get("search")
+        order = self.request.GET.get("order")
 
         if self.request.user.is_authenticated:
             filter_object = Recipe.objects.filter(
                 Q(user__in=self.request.user.follow.all())|
                 Q(user=self.request.user)
                 )
+            #非公開の投稿は表示しない
+            filter_object = filter_object.exclude(public="非公開")
             #検索ワードがある場合
-            if q_word:
-                filter_object = Recipe.objects.filter(
-                    Q(user__in=self.request.user.follow.all())|
-                    Q(user=self.request.user),
-                    Q(user__username__contains=q_word)|
-                    Q(recipe_name__contains=q_word)|
-                    Q(ingredient__contains=q_word)|
-                    Q(type__contains=q_word)
+            if search:
+                filter_object = filter_object.filter(
+                    Q(user__username__contains=search)|
+                    Q(recipe_name__contains=search)|
+                    Q(ingredient__contains=search)|
+                    Q(type__contains=search)
                     )
                 #並び替え
-                if s_word == "new":
-                    filter_object = filter_object.order_by("-date")
-                elif s_word == "old":
-                    filter = filter
+                if order == "new":
+                    object_list = filter_object.order_by("-date")
+                elif order == "old":
+                    object_list = filter_object.order_by("date")
                 #検索ワードのみの場合
                 else:
-                    filter_object = filter_object.order_by("-date")
-            elif s_word == "old":
-                filter_object = filter_object
+                    object_list = filter_object.order_by("-date")
+            elif order == "old":
+                object_list = filter_object.order_by("date")
             else:
-                filter_object = filter_object.order_by("-date")
-            #非公開の投稿は表示しない
-            object_list = filter_object.exclude(public="非公開")
+                object_list = filter_object.order_by("-date")
             return object_list
-        else:
-            return reverse_lazy("signup:login")
+
 
 
 
@@ -220,39 +211,39 @@ class EatUsersListView(ListView):
     template_name = "eat/recipe_list.html"
 
     def get_queryset(self):
-        q_word = self.request.GET.get("search")
-        s_word = self.request.GET.get("order")
+        search = self.request.GET.get("search")
+        order = self.request.GET.get("order")
         users_id = self.kwargs.get('users_id')
         users = User.objects.get(id=users_id)
 
 
         filter_object = Recipe.objects.filter(user=users_id)
-        if q_word:
-            filter_object = Recipe.objects.filter(
-                Q(user=users_id),
-                Q(recipe_name__contains=q_word)|
-                Q(ingredient__contains=q_word)|
-                Q(type__contains=q_word))
-            if s_word == "new":
-                filter_object = filter_object.order_by("-date")
-            elif s_word == "old":
-                filter_object = filter_object
-            else:
-                filter_object = filter_object.order_by("-date")
-        elif s_word == "old":
-            filter_object = filter_object
-        else:
-            filter_object = filter_object.order_by("-date")
         #非公開の投稿を表示させない
         if self.request.user.is_authenticated:
             if users == self.request.user:
-                object_list = filter_object.order_by("-date")
+                filter_object = filter_object.order_by("-date")
             elif users in self.request.user.follow.all():
-                object_list = filter_object.exclude(public="非公開")
+                filter_object = filter_object.exclude(public="非公開")
             else:
-                object_list = filter_object.exclude(Q(public="非公開") | Q(public="友達のみ"))
+                filter_object = filter_object.exclude(Q(public="非公開") | Q(public="友達のみ"))
         else:
-            object_list = filter_object.exclude(Q(public="非公開") | Q(public="友達のみ"))
+            filter_object = filter_object.exclude(Q(public="非公開") | Q(public="友達のみ"))
+        if search:
+            filter_object = filter_object.filter(
+                Q(user=users_id),
+                Q(recipe_name__contains=search)|
+                Q(ingredient__contains=search)|
+                Q(type__contains=search))
+            if order == "new":
+                object_list = filter_object.order_by("-date")
+            elif order == "old":
+                object_list = filter_object.order_by("date")
+            else:
+                object_list = filter_object.order_by("-date")
+        elif order == "old":
+            object_list = filter_object.order_by("date")
+        else:
+            object_list = filter_object.order_by("-date")
         return object_list
 
     def get_context_data(self, **kwargs):
@@ -276,63 +267,44 @@ class EatFindListView(ListView):
     template_name = "eat/recipe_find_list.html"
 
     def get_queryset(self):
-        q_word = self.request.GET.get("search")
-        s_word = self.request.GET.get("order")
+        search = self.request.GET.get("search")
+        order = self.request.GET.get("order")
+
+        filter_object = Recipe.objects.all()
 
         #ログインしている場合
         if self.request.user.is_authenticated:
-            filter_object = Recipe.objects.all()
-            if q_word:
-                filter_object = Recipe.objects.filter(
-                    Q(recipe_name__contains=q_word)|
-                    Q(memo__contains=q_word)|
-                    Q(user__username__contains=q_word)|
-                    Q(ingredient__contains=q_word)|
-                    Q(type__contains=q_word))
-                if s_word == "new":
-                    filter_object = filter_object.order_by("-date")
-                elif s_word == "old":
-                    filter_object = filter_object
-                else:
-                    filter_object = filter_object.order_by("-date")
-            elif s_word == "old":
-                filter_object = filter_object
-            else:
-                filter_object = filter_object.order_by("-date")
-            if filter_object.count() >= 1:
-                for object in filter_object:
-                    if object.user in self.request.user.follow.all():
-                        object_list = filter_object.exclude(public="非公開")
-                    else:
-                        object_list = filter_object.exclude(
-                            Q(public="非公開")|
-                            Q(public="友達のみ")
-                            )
-            else:
-                object_list = filter_object
-
-
-        #ログインしていない場合
+            #ログイン中
+            #フォローしているユーザーの友達のみ公開の投稿を絞り込む
+            filter_object = filter_object.filter(
+                Q(user__in=self.request.user.follow.all(), public="友達のみ")|
+                Q(public="公開")|
+                Q(user=self.request.user)
+                )
+        #ログアウト中
         else:
-            filter_object = Recipe.objects.filter(public="公開")
-            if q_word:
-                filter_object = Recipe.objects.filter(
-                    Q(public="公開"),
-                    Q(user__username__contains=q_word)|
-                    Q(ingredient__contains=q_word)|
-                    Q(type__contains=q_word)
-                    )
-                if s_word == "new":
-                    object_list = filter_object.order_by("-date")
-
-                elif s_word == "old":
-                    object_list = filter_object
-                else:
-                    object_list = filter_object.order_by("-date")
-            elif s_word == "old":
-                object_list = filter_object
+            filter_object = filter_object.exclude(
+                Q(public="非公開")|
+                Q(public="友達のみ")
+                )
+        if search:
+            filter_object = filter_object.filter(
+                Q(recipe_name__contains=search)|
+                Q(memo__contains=search)|
+                Q(user__username__contains=search)|
+                Q(ingredient__contains=search)|
+                Q(type__contains=search)
+                )
+            if order == "new":
+                object_list = filter_object.order_by("-date")
+            elif order == "old":
+                object_list = filter_object.order_by("date")
             else:
                 object_list = filter_object.order_by("-date")
+        elif order == "old":
+            object_list = filter_object.order_by("date")
+        else:
+            object_list = filter_object.order_by("-date")
         return object_list
 
 
@@ -355,18 +327,15 @@ class EatQuoteDetailView(DetailView):
 
     def get(self, request, *args, **kwargs):
         if self.request.user.is_authenticated:
-            recipe = Recipe.objects.get(id=kwargs['pk'])
+            recipe = self.get_object()
             #すでに参考クックを投稿している場合
             if Recipe.objects.filter(id=kwargs['pk'], quote_user=self.request.user).exists():
-                msg = """
-                    このレシピの参考cookは作成済みです。
-                    レシピは<a href='{url}'> こちら </a>から削除できます
-                    """
-                url = reverse_lazy("signup:top")
+                msg = """このレシピの参考cookは作成済みです。レシピは<a href='{url}'> こちら </a>から削除できます"""
+                delete_recipe = Recipe.objects.get(id=kwargs['pk'], quote_user=self.request.user)
+                url = reverse_lazy("eat:delete", kwargs={"pk": delete_recipe.id})
                 messages.error(self.request, mark_safe(msg.format(url=url)))
-
                 return redirect(request.META.get('HTTP_REFERER'))
-            elif recipe.quote_recipe == "有り":
+            elif recipe.quote == "有り":
                 messages.error(self.request, "参考cookに参考cookは作成できません")
                 return redirect(request.META.get('HTTP_REFERER'))
             #作成者とログインユーザーが一致しない場合
@@ -401,17 +370,18 @@ class EatQuoteCreateView(LoginRequiredMixin, CreateView):
     model = Recipe
     form_class = RecipeForm
     template_name = "eat/quote_create.html"
-    success_url = reverse_lazy("signup:top")
+    success_url = reverse_lazy("eat:index")
     login_url = "/signup/login/"
 
     def post(self, request, *args, **kwargs):
         if self.request.user.is_authenticated:
             recipe = Recipe.objects.get(id=kwargs['pk'])
-            print(recipe)
             #すでに参考クックを投稿している場合
             if Recipe.objects.filter(id=kwargs['pk'], quote_user=self.request.user).exists():
-                return redirect('signup:top')
-            elif recipe.quote_recipe == "有り":
+                messages.error(self.request, "すでに参考cookを作成しています")
+                return redirect(request.META.get('HTTP_REFERER'))
+            #投稿が参考cookの場合
+            elif recipe.quote == "有り":
                 messages.error(self.request, "参考cookに参考cookは作成できません")
                 return redirect(request.META.get('HTTP_REFERER'))
             #作成者とログインユーザーが一致しない場合
@@ -422,8 +392,7 @@ class EatQuoteCreateView(LoginRequiredMixin, CreateView):
             else:
                 messages.error(self.request, "自分の投稿に参考cookは作成できません")
                 return redirect(request.META.get('HTTP_REFERER'))
-        else:
-            return redirect("signup:login")
+
 
         return super().post(request, *args, **kwargs)
 

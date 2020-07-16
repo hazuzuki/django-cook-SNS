@@ -33,7 +33,7 @@ class TestRecipeForm(TestCase):
 
     def test_piblic_label(self):
         form = RecipeForm()
-        self.assertTrue(form.fields['type'].label == "公開")
+        self.assertTrue(form.fields['public'].label == "公開")
 
 
     def test_form_is_valid(self):
